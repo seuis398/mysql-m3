@@ -12,7 +12,7 @@ sub init($$) {
 	my $file = shift;
 	my $progam = shift;
 
-	my @paths = qw(/etc /etc/mmm /etc/mysql-mmm);
+	my @paths = qw(%PREFIX%/conf);
 
 	# Determine filename
 	my $fullname;
@@ -35,7 +35,7 @@ sub init($$) {
 
 		log4perl.appender.LogFile                           = Log::Log4perl::Appender::File
 		log4perl.appender.LogFile.Threshold                 = INFO 
-		log4perl.appender.LogFile.filename                  = /var/log/mysql-mmm/$progam.log
+		log4perl.appender.LogFile.filename                  = %PREFIX%/log/$progam.log
 		log4perl.appender.LogFile.recreate                  = 1
 		log4perl.appender.LogFile.layout                    = PatternLayout
 		log4perl.appender.LogFile.layout.ConversionPattern  = %d %5p %m%n

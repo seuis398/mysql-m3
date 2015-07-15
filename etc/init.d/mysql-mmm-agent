@@ -10,17 +10,16 @@
 # pidfile: /var/run/mmm_agentd.pid
 
 # Cluster name (it can be empty for default cases)
-CLUSTER=''
-
+CLUSTER=$2
 
 #-----------------------------------------------------------------------
 # Paths
 if [ "$CLUSTER" != "" ]; then
-    MMM_AGENTD_BIN="/usr/sbin/mmm_agentd @$CLUSTER"
-    MMM_AGENTD_PIDFILE="/var/run/mmm_agentd-$CLUSTER.pid"
-else 
-    MMM_AGENTD_BIN="/usr/sbin/mmm_agentd"
-    MMM_AGENTD_PIDFILE="/var/run/mmm_agentd.pid"
+    MMM_AGENTD_BIN="%PREFIX%/bin/mmm_agentd @$CLUSTER"
+    MMM_AGENTD_PIDFILE="%PREFIX%/tmp/$CLUSTER.pid"
+else
+    MMM_AGENTD_BIN="%PREFIX%/bin/mmm_agentd"
+    MMM_AGENTD_PIDFILE="%PREFIX%/tmp/mmm_agentd.pid"
 fi
 
 echo "Daemon bin: '$MMM_AGENTD_BIN'"
@@ -84,8 +83,8 @@ case "$1" in
         ;;
 
   restart|reload)
-        $0 stop
-        $0 start
+        $0 stop $2
+        $0 start $2
         exit $?
         ;;
 

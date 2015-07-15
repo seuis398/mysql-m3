@@ -1,41 +1,34 @@
-
-ifndef INSTALLDIR
-INSTALLDIR = installvendorlib
+ifndef PREFIX
+	PREFIX = /usr/local/mysql-mmm
 endif
 
-MODULEDIR = $(DESTDIR)$(shell eval "`perl -V:${INSTALLDIR}`"; echo "$$${INSTALLDIR}")/MMM
-BINDIR    = $(DESTDIR)/usr/lib/mysql-mmm
-SBINDIR   = $(DESTDIR)/usr/sbin
-LOGDIR    = $(DESTDIR)/var/log/mysql-mmm
-ETCDIR    = $(DESTDIR)/etc
-CONFDIR   = $(ETCDIR)/mysql-mmm
+MODULEDIR = $(PREFIX)/lib
+BINDIR    = $(PREFIX)/bin
+LOGDIR    = $(PREFIX)/log
+CONFDIR   = $(PREFIX)/conf
+ETCDIR    = $(PREFIX)/etc
+TMPDIR    = $(PREFIX)/tmp
+INITDIR   = /etc/init.d
 
 install_common:
-		mkdir -p $(DESTDIR) $(MODULEDIR) $(BINDIR) $(SBINDIR) $(LOGDIR) $(ETCDIR) $(CONFDIR) $(ETCDIR)/init.d/
-		cp -r lib/Common/ $(MODULEDIR)
-		[ -f $(CONFDIR)/mmm_common.conf ] || cp etc/mysql-mmm/mmm_common.conf $(ETCDIR)/mysql-mmm/
+	mkdir -p $(MODULEDIR)/MMM $(BINDIR) $(LOGDIR) $(CONFDIR) $(ETCDIR)/init.d $(TMPDIR)
+
+	cp -r lib/*  $(MODULEDIR)/MMM/
+	cp -r bin/*  $(BINDIR)/
+	cp -r sbin/* $(BINDIR)/
+	cp -r etc/init.d/*  $(ETCDIR)/init.d/
+
+	find $(ETCDIR)/init.d/ $(MODULEDIR)/MMM/ -type f -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
+	find $(BINDIR)/ -type f -exec sed -i '/^#!\/usr\/bin\/env perl$$/ a BEGIN { unshift @INC,"$(MODULEDIR)"; }' {} \;
 
 install_agent: install_common
-		mkdir -p $(BINDIR)/agent/
-		cp -r lib/Agent/ $(MODULEDIR)
-		cp -r bin/agent/* $(BINDIR)/agent/
-		cp -r etc/init.d/mysql-mmm-agent $(ETCDIR)/init.d/
-		cp sbin/mmm_agentd $(SBINDIR)
-		[ -f $(CONFDIR)/mmm_agent.conf  ] || cp etc/mysql-mmm/mmm_agent.conf  $(ETCDIR)/mysql-mmm/
+	ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent
+	cp -r etc/mysql-mmm/mmm_agent.conf $(CONFDIR)/mmm_agent_example.conf
+	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 
 install_monitor: install_common
-		mkdir -p $(BINDIR)/monitor/
-		cp -r lib/Monitor/ $(MODULEDIR)
-		cp -r bin/monitor/* $(BINDIR)/monitor/
-		cp -r etc/init.d/mysql-mmm-monitor $(ETCDIR)/init.d/
-		cp sbin/mmm_control sbin/mmm_mond $(SBINDIR)
-		[ -f $(CONFDIR)/mmm_mon.conf    ] || cp etc/mysql-mmm/mmm_mon.conf    $(ETCDIR)/mysql-mmm/
+	ln -sf $(ETCDIR)/init.d/mysql-mmm-monitor $(INITDIR)/mysql-mmm-monitor
+	cp -r etc/mysql-mmm/mmm_mon.conf $(CONFDIR)/mmm_mon_example.conf
+	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 
-install_tools: install_common
-		mkdir -p $(BINDIR)/tools/
-		cp -r lib/Tools/ $(MODULEDIR)
-		cp -r bin/tools/* $(BINDIR)/tools/
-		cp sbin/mmm_backup sbin/mmm_clone sbin/mmm_restore $(SBINDIR)
-		[ -f $(CONFDIR)/mmm_tools.conf  ] || cp etc/mysql-mmm/mmm_tools.conf  $(ETCDIR)/mysql-mmm/
-
-install: install_agent install_monitor install_tools
+install: install_agent install_monitor

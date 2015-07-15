@@ -248,7 +248,7 @@ sub _get_filename($$) {
 	my $file = shift;
 
 	$file .= '.conf' unless ($file =~ /\.conf$/);
-	my @paths = qw(/etc /etc/mmm /etc/mysql-mmm);
+	my @paths = qw(%PREFIX%/conf);
 
 	my $fullname;
 	foreach my $path (@paths) {

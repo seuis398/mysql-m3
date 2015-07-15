@@ -10,17 +10,17 @@
 # pidfile: /var/run/mmm_mond.pid
 
 # Cluster name (it can be empty for default cases)
-CLUSTER=''
+CLUSTER=$2
 
 
 #-----------------------------------------------------------------------
 # Paths
 if [ "$CLUSTER" != "" ]; then
-    MMM_MOND_BIN="/usr/sbin/mmm_mond @$CLUSTER"
-    MMM_MOND_PIDFILE="/var/run/mmm_mond-$CLUSTER.pid"
-else 
-    MMM_MOND_BIN="/usr/sbin/mmm_mond"
-    MMM_MOND_PIDFILE="/var/run/mmm_mond.pid"
+    MMM_MOND_BIN="%PREFIX%/bin/mmm_mond @$CLUSTER"
+    MMM_MOND_PIDFILE="%PREFIX%/tmp/$CLUSTER.pid"
+else
+    MMM_MOND_BIN="%PREFIX%/bin/mmm_mond"
+    MMM_MOND_PIDFILE="%PREFIX%/tmp/mmm_mond.pid"
 fi
 
 echo "Daemon bin: '$MMM_MOND_BIN'"
@@ -84,8 +84,8 @@ case "$1" in
         ;;
 
   restart|reload)
-        $0 stop
-        $0 start
+        $0 stop $2
+        $0 start $2
         exit $?
         ;;
 
