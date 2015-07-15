@@ -9,6 +9,7 @@ use File::Temp;
 use File::Basename;
 use MMM::Monitor::Agent;
 use MMM::Monitor::Role;
+use Net::Ping;
 
 
 
@@ -34,8 +35,9 @@ sub _new_instance($) {
 		$data->{$host} = new MMM::Monitor::Agent:: (
 			host		=> $host,
 			mode		=> $main::config->{host}->{$host}->{mode},
-			ip			=> $main::config->{host}->{$host}->{ip},
+			ip		=> $main::config->{host}->{$host}->{ip},
 			port		=> $main::config->{host}->{$host}->{agent_port},
+			mysql_port	=> $main::config->{host}->{$host}->{mysql_port},
 			state		=> 'UNKNOWN',
 			roles		=> [],
 			uptime		=> 0,
@@ -131,14 +133,31 @@ sub get_status_info($) {
 	my $detailed= shift || 0;
 	my $res		= '';
 	my $agent_res = '';
+	my $p = Net::Ping->new("icmp");
+
+	$res .= "== MySQL & Virtual IP status ==\n";
 
 	keys (%$self); # reset iterator
 	foreach my $host (sort(keys(%$self))) {
 		my $agent = $self->{$host};
 		next unless $agent;
 		$agent_res	.= "# Warning: agent on host $host is not reachable\n" if ($agent->agent_down());
-		$res		.= sprintf("  %s(%s) %s/%s. Roles: %s\n", $host, $agent->ip, $agent->mode, $agent->state, join(', ', sort(@{$agent->roles})));
+
+		my @arr_role;
+		foreach my $check_roles (@{$agent->roles}) {
+			$check_roles =~ /(writer|reader)\((.*)\)/;
+			my $vip = $2;
+			my $ping_check = "Error";
+			$ping_check = "OK" if $p->ping($vip, 1);
+
+			unshift @arr_role, sprintf("%s/Ping_%s", $check_roles, $ping_check);
+		}
+
+                $res .= sprintf("  %s(%s) %s/%s. Roles: %s\n", $host, join(':', $agent->ip, $agent->mysql_port), $agent->mode, $agent->state, join(', ', sort(@arr_role)));
 	}
+	
+	$p->close();
+
 	$res = $agent_res . $res if ($detailed);
 	return $res;
 }

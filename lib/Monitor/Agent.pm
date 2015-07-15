@@ -5,6 +5,7 @@ use warnings FATAL => 'all';
 use Log::Log4perl qw(:easy);
 use MMM::Common::Socket;
 use MMM::Monitor::ChecksStatus;
+use Net::Ping;
 
 our $VERSION = '0.01';
 
@@ -17,6 +18,7 @@ struct 'MMM::Monitor::Agent' => {
 	mode              => '$',
 	ip                => '$',
 	port              => '$',
+	mysql_port        => '$',
 
 	state             => '$',
 	roles             => '@',

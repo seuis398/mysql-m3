@@ -709,4 +709,29 @@ sub is_active_master_role($$) {
 	return ($role eq $main::config->{active_master_role});
 }
 
+
+=item get_roles_info($)
+
+Get string containing role information.
+
+=cut
+
+sub get_roles_info($) {
+	my $self = shift;
+	my $res = '';
+	my $ips = '';
+	my $hosts = '';
+
+	$res .= "== Role info ==\n";
+
+	# writer first.
+	foreach my $role (reverse keys(%$self)) {
+		my $role_info = $self->{$role};
+		$res .= sprintf("  %-20s : %s (%s)\n", $role." (".$role_info->{mode}.")", join(',', $self->get_role_hosts($role)), join(', ', keys(%{$role_info->{ips}})) );
+	}
+	$res .= "\n";
+
+	return $res;
+}
+
 1;

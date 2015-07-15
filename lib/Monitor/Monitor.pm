@@ -48,7 +48,8 @@ struct 'MMM::Monitor::Monitor' => {
 	roles				=> 'MMM::Monitor::Roles',
 	mode				=> '$',
 	passive_info		=> '$',
-	kill_host_bin		=> '$'
+	kill_host_bin		=> '$',
+	uptime			=> '$'
 };
 
 
@@ -360,6 +361,8 @@ sub main($) {
 		push(@threads, new threads(\&MMM::Monitor::Checker::main, $check_name, $self->checker_queue));
 	}
 	
+	# check monitor uptime
+	$self->uptime(time());
 
 	my $command_queue = $self->command_queue;
 
@@ -1003,6 +1006,43 @@ sub get_mode_string($) {
 	return 'WAIT'    if ($self->mode == MMM_MONITOR_MODE_WAIT);
 	return 'PASSIVE' if ($self->mode == MMM_MONITOR_MODE_PASSIVE);
 	return 'UNKNOWN'; # should never happen
+}
+
+=item get_monitor_info()
+
+Get string representation of daemon status
+
+=cut
+
+sub get_monitor_info($) {
+	my $self  = shift;
+	my $res = '';
+	my $uptime_diff = time() - $self->uptime;
+	my $uptime_str = '';
+
+	if ($uptime_diff < 60) {
+		$uptime_str = $uptime_diff." seconds";
+	}
+	elsif ($uptime_diff < 3600) {
+		$uptime_str = sprintf("%d minutes %d seconds", int($uptime_diff/60), $uptime_diff%60);
+	}
+	elsif ($uptime_diff < 86400) {
+		$uptime_str = sprintf("%d hours %d minutes", int($uptime_diff/3600), int($uptime_diff/60 % 60));
+	}
+	else {
+		$uptime_str = sprintf("%d days %d hours", int($uptime_diff/86400), int($uptime_diff/3600 % 24));
+	}
+
+	$res .= sprintf("== MMM Monitor info ==\n");
+	$res .= sprintf("  Port                 : %d \n", $main::config->{monitor}->{port});
+	$res .= sprintf("  PID file             : %s \n", $main::config->{monitor}->{pid_path});
+	$res .= sprintf("  Status file          : %s \n", $main::config->{monitor}->{status_path});
+	$res .= sprintf("  Auto set online      : %d seconds\n", $main::config->{monitor}->{auto_set_online});
+	$res .= sprintf("  MySQL check interval : %d seconds\n", $main::config->{check}->{mysql}->{check_period});
+	$res .= sprintf("  MySQL trap period    : %d seconds\n", $main::config->{check}->{mysql}->{trap_period});
+	$res .= sprintf("  Uptime               : %s\n\n", $uptime_str);
+
+	return $res;
 }
 
 1;

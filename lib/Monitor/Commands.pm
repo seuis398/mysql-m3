@@ -66,6 +66,8 @@ sub show() {
 		$ret .= sprintf("Cause: %s\n", $monitor->passive_info);
 		$ret =~ s/^/# /mg;
 	}
+	$ret .= $monitor->get_monitor_info();
+	$ret .= $roles->get_roles_info();
 	$ret .= $agents->get_status_info(1);
 	$ret .= $roles->get_preference_info();
 	return $ret;
