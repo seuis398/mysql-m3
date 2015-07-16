@@ -1034,13 +1034,15 @@ sub get_monitor_info($) {
 	}
 
 	$res .= sprintf("== MMM Monitor info ==\n");
-	$res .= sprintf("  Port                 : %d \n", $main::config->{monitor}->{port});
-	$res .= sprintf("  PID file             : %s \n", $main::config->{monitor}->{pid_path});
-	$res .= sprintf("  Status file          : %s \n", $main::config->{monitor}->{status_path});
-	$res .= sprintf("  Auto set online      : %d seconds\n", $main::config->{monitor}->{auto_set_online});
-	$res .= sprintf("  MySQL check interval : %d seconds\n", $main::config->{check}->{mysql}->{check_period});
-	$res .= sprintf("  MySQL trap period    : %d seconds\n", $main::config->{check}->{mysql}->{trap_period});
-	$res .= sprintf("  Uptime               : %s\n\n", $uptime_str);
+	$res .= sprintf("  Port              : %d \n", $main::config->{monitor}->{port});
+	$res .= sprintf("  PID file          : %s \n", $main::config->{monitor}->{pid_path});
+	$res .= sprintf("  Status file       : %s \n", $main::config->{monitor}->{status_path});
+	$res .= sprintf("  Auto set online   : %d seconds\n", $main::config->{monitor}->{auto_set_online});
+	$res .= sprintf("  Check ping        : every %d seconds, trap %d seconds\n", $main::config->{check}->{ping}->{check_period}, $main::config->{check}->{ping}->{trap_period});
+	$res .= sprintf("  Check mysql       : every %d seconds, trap %d seconds\n", $main::config->{check}->{mysql}->{check_period}, $main::config->{check}->{mysql}->{trap_period});
+	$res .= sprintf("  Check rep_threads : every %d seconds, trap %d seconds\n", $main::config->{check}->{rep_threads}->{check_period}, $main::config->{check}->{rep_threads}->{trap_period});
+	$res .= sprintf("  Check rep_backlog : every %d seconds, max_delay %d seconds\n", $main::config->{check}->{rep_backlog}->{check_period}, $main::config->{check}->{rep_backlog}->{max_backlog});
+	$res .= sprintf("  Uptime            : %s\n\n", $uptime_str);
 
 	return $res;
 }
