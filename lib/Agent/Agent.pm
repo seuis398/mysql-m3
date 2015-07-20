@@ -249,8 +249,8 @@ sub cmd_set_status($$) {
 	
 	# Process state change
 	if ($new_state ne $self->state) {
-		if ($new_state		eq 'ADMIN_OFFLINE') { MMM::Agent::Helpers::turn_off_slave();	}
-		if ($self->state	eq 'ADMIN_OFFLINE') { MMM::Agent::Helpers::turn_on_slave();		}
+		# if ($new_state    eq 'ADMIN_OFFLINE') { MMM::Agent::Helpers::turn_off_slave(); }
+		# if ($self->state  eq 'ADMIN_OFFLINE') { MMM::Agent::Helpers::turn_on_slave();  }
 		$self->state($new_state);
 	}
 
