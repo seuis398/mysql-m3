@@ -60,6 +60,21 @@ sub configure_ip($$) {
 }
 
 
+=item force_arp_refresh($if, $ip)
+
+Send arp requests forcedly to notify other hosts.
+
+=cut
+
+sub force_arp_refresh($$) {
+	my $if = shift;
+	my $ip = shift;
+
+	MMM::Agent::Helpers::Network::send_arp($if, $ip); 
+	_exit_ok();
+}
+
+
 =item clear_ip($if, $ip)
 
 Remove the IP address $ip from interface $if.

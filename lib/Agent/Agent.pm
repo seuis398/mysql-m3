@@ -186,7 +186,7 @@ sub cmd_clear_bad_roles($) {
 
 sub cmd_set_status($$) {
 	my $self	= shift;
-	my ($new_state, $new_roles_str, $new_master) = @_;
+	my ($new_state, $new_roles_str, $new_master, $ping_test) = @_;
 
 	# Change master if we are a slave
 	if ($new_master ne $self->active_master && $self->mode eq 'slave' && $new_state eq 'ONLINE' && $new_master ne '') {
@@ -236,6 +236,15 @@ sub cmd_set_status($$) {
 		foreach my $role (@added_roles)		{ $role->add(); }
 
 		$self->roles(\@new_roles);
+	}
+	# if there is no changes, check ping test results
+	elsif (defined($ping_test) && $ping_test eq "ERR") {
+		FATAL "MMM VIP ping failure, Send arp requests forcedly!";
+
+		foreach my $role (@{$self->roles}) {
+			$role =~ /(writer|reader)\((.*)\)/;
+			MMM::Agent::Helpers::force_arp_refresh($main::agent->interface, $2);
+		}
 	}
 	
 	# Process state change

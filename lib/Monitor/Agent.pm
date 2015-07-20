@@ -145,8 +145,17 @@ sub cmd_set_status($$) {
 	my $self	= shift;
 	my $master	= shift;
 	my $retries	= shift || 0;
+	my $ping_check  = 'OK';
 
-	return $self->_send_command_retry($retries, 'SET_STATUS', $self->state, join(',', sort(@{$self->roles})), $master);
+	my $p = Net::Ping->new("tcp");
+
+	foreach my $check_roles (@{$self->roles}) {
+		$check_roles =~ /(writer|reader)\((.*)\)/;
+		my $vip = $2;
+		$ping_check = 'ERR' unless $p->ping($vip, 1);
+	}
+
+	return $self->_send_command_retry($retries, 'SET_STATUS', $self->state, join(',', sort(@{$self->roles})), $master, $ping_check);
 }
 
 sub cmd_get_agent_status($) {

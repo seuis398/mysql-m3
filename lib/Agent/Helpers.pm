@@ -49,6 +49,19 @@ sub configure_ip($$) {
 }
 
 
+=item force_arp_refresh($if, $ip)
+
+Send arp requests forcedly to notify other hosts.
+
+=cut
+
+sub force_arp_refresh($$) {
+	my $if = shift;
+	my $ip = shift;
+	return _execute('force_arp_refresh', "$if $ip");
+}
+
+
 =item clear_ip($if, $ip)
 
 Remove the IP address $ip from interface $if.
