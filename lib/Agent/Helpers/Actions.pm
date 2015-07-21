@@ -137,7 +137,6 @@ Deny writes on local MySQL server. Sets global read_only to 1.
 
 sub mysql_deny_write() {
 	_mysql_set_read_only(1);
-	kill_sql();
 	_exit_ok();
 }
 

@@ -115,6 +115,17 @@ sub deny_write() {
 }
 
 
+=item kill_sql()
+
+kill all user threads to prevent further writes.
+
+=cut
+
+sub kill_sql() {
+	return _execute('kill_sql');
+}
+
+
 =item turn_on_slave( )
 
 Start slave on local MySQL server.

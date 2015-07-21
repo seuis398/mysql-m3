@@ -85,6 +85,7 @@ sub del($) {
 	my $res;
 	
 	if ($self->name eq $main::agent->writer_role) {
+		MMM::Agent::Helpers::kill_sql();
 		$res = MMM::Agent::Helpers::deny_write();
 		if (!defined($res) || $res !~ /^OK/) {
 			FATAL sprintf("Couldn't deny writes: %s", defined($res) ? $res : 'undef');

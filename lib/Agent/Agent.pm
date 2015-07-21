@@ -259,9 +259,19 @@ sub cmd_set_status($$) {
 
 sub check_roles($) {
 	my $self	= shift;
+	my $res;
+	my $have_writer = 0;
 
 	foreach my $role (@{$self->roles}) {
 		$role->check();	
+		$have_writer = 1 if ($role->name eq $main::agent->writer_role);
+	}
+
+	if ($self->mode eq 'master' && $have_writer == 0 && $self->state eq 'ONLINE') {
+		$res = MMM::Agent::Helpers::deny_write();
+		if (!defined($res) || $res !~ /^OK/) {
+			FATAL sprintf("Couldn't deny writes: %s", defined($res) ? $res : 'undef');
+		}
 	}
 }
 

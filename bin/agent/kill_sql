@@ -1,0 +1,36 @@
+#!/usr/bin/env perl
+
+# Use mandatory external modules
+use strict;
+use warnings FATAL => 'all';
+use MMM::Common::Config;
+use MMM::Agent::Helpers::Actions;
+
+# Check arguments
+if (scalar(@ARGV) != 1) {
+        print "Usage: $0 <config_file>\n\n";
+        exit(1);
+}
+
+# Read config file
+my $config_file = shift;
+our $config = new MMM::Common::Config::;
+$config->read($config_file);
+$config->check('AGENT');
+
+# Finally do the work
+MMM::Agent::Helpers::Actions::kill_sql();
+
+__END__
+
+=head1 NAME
+
+kill_sql
+
+=head1 DESCRIPTION
+
+kill_sql is a helper binary for B<mmm_agentd>. kill all user threads to prevent further writes.
+
+=head1 USAGE
+
+kill_sql
