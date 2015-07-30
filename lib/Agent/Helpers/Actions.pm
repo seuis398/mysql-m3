@@ -2,9 +2,15 @@ package MMM::Agent::Helpers::Actions;
 
 use strict;
 use warnings FATAL => 'all';
+use English qw( OSNAME );
 use MMM::Agent::Helpers::Network;
 
 our $VERSION = '0.01';
+
+if ($OSNAME eq 'linux' || $OSNAME eq 'freebsd') {
+        # these libs will always be loaded, use require and then import to avoid that
+        use Time::HiRes qw( usleep );
+}
 
 =head1 NAME
 
@@ -249,7 +255,7 @@ sub toggle_slave($) {
 
 =item sync_with_master( )
 
-Try to sync up a (soon active) master with his peer (old active master) when the I<active_master_role> is moved. If the peer is reachable it syncs with the master log. If not reachable, syncs with the relay log.
+Try to sync up a (soon active) master with his peer (old active master) when the I<active_master_role> is moved. 
 
 =cut
 
@@ -257,54 +263,75 @@ sub sync_with_master() {
 
 	my $this = _get_this();
 
-	my ($this_host, $this_port, $this_user, $this_password)	= _get_connection_info($this);
+	my ($this_host, $this_port, $this_user, $this_password) = _get_connection_info($this);
 	_exit_error('No local connection info') unless defined($this_host);
-
-	my $peer = $main::config->{host}->{$this}->{peer};
-	_exit_error('No peer defined') unless defined($peer);
-
-	my ($peer_host, $peer_port, $peer_user, $peer_password)	= _get_connection_info($peer);
-	_exit_error('No peer connection info') unless defined($peer_host);
 
 	# Connect to local server
 	my $this_dbh = _mysql_connect($this_host, $this_port, $this_user, $this_password);
 	_exit_error("Can't connect to MySQL (host = $this_host:$this_port, user = $this_user)! " . $DBI::errstr) unless ($this_dbh);
 
-	# Connect to peer
-	my $peer_dbh = _mysql_connect($peer_host, $peer_port, $peer_user, $peer_password);
-	
+	my $wait_pos='';
+	my $old_wait_pos='';
+	my $chk_wait_pos='';
+	my $slave_status='';
+	my $last_sql_time='';
+	my $last_sql_error_pos='';
+
 	# Determine wait log and wait pos
-	my $wait_log;
-	my $wait_pos;
-	if ($peer_dbh) {
-		my $master_status = $peer_dbh->selectrow_hashref('SHOW MASTER STATUS');
-		if (defined($master_status)) {
-			$wait_log = $master_status->{File};
-			$wait_pos = $master_status->{Position};
-		}
-		$peer_dbh->disconnect;
-	} 
-	unless (defined($wait_log)) {
-		my $slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
+	do
+	{
+		$old_wait_pos = $wait_pos;
+
+		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
 		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
-		$wait_log = $slave_status->{Master_Log_File};
-		$wait_pos = $slave_status->{Read_Master_Log_Pos};
-	}
 
-	# Sync with logs
-	my $res = $this_dbh->do("SELECT MASTER_POS_WAIT('$wait_log', $wait_pos)");
-	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
-	
-	_exit_ok();
-	
+		$wait_pos = join(",", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
+		usleep(500 * 1000);
+	} while ($old_wait_pos ne $wait_pos) ;
+
+	$old_wait_pos = '';
+	$this_dbh->do('STOP SLAVE IO_THREAD');
+
+
+	# Sync with the relay log.
+	do
+	{
+		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
+		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
+
+		$wait_pos	= join(",", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
+		$chk_wait_pos	= join(",", $slave_status->{Relay_Master_Log_File}, $slave_status->{Exec_Master_Log_Pos});
+
+		if ($chk_wait_pos ne $old_wait_pos) {
+			$last_sql_time = time()
+		}
+		elsif (time() - $last_sql_time > 600) {
+			# give up
+			$chk_wait_pos = $wait_pos;
+		}
+
+		if ($slave_status->{Slave_SQL_Running} eq 'No') {
+			$this_dbh->do('SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1') if($chk_wait_pos eq $last_sql_error_pos);
+
+			# re-try
+			$this_dbh->do('START SLAVE SQL_THREAD');
+			$last_sql_error_pos = $chk_wait_pos;
+		}
+
+		$old_wait_pos = $chk_wait_pos;
+		usleep(200 * 1000);
+	} while ($wait_pos ne $chk_wait_pos) ;
+
+	$this_dbh->do('START SLAVE IO_THREAD');
+	$this_dbh->disconnect;
+
+	_exit_ok('');
 }
-
 
 
 =item set_active_master($new_master)
 
 Try to catch up with the old master as far as possible and change the master to the new host.
-(Syncs to the master log if the old master is reachable. Otherwise syncs to the relay log.)
 
 =cut
 
@@ -317,54 +344,14 @@ sub set_active_master($) {
 	_exit_error('New master is equal to local host!?') if ($this eq $new_peer);
 
 	# Get local connection info
-	my ($this_host, $this_port, $this_user, $this_password)	= _get_connection_info($this);
+	my ($this_host, $this_port, $this_user, $this_password) = _get_connection_info($this);
 	_exit_error("No connection info for local host '$this_host'") unless defined($this_host);
-	
+
 	# Get connection info for new peer
-	my ($new_peer_host, $new_peer_port, $new_peer_user, $new_peer_password)	= _get_connection_info($new_peer);
+	my ($new_peer_host, $new_peer_port, $new_peer_user, $new_peer_password) = _get_connection_info($new_peer);
 	_exit_error("No connection info for new peer '$new_peer'") unless defined($new_peer_host);
-	
-	# Connect to local server
-	my $this_dbh = _mysql_connect($this_host, $this_port, $this_user, $this_password);
-	_exit_error("Can't connect to MySQL (host = $this_host:$this_port, user = $this_user)! " . $DBI::errstr) unless ($this_dbh);
 
-	# Get slave info
-	my $slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
-	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
-
-	my $wait_log	= $slave_status->{Master_Log_File};
-	my $wait_pos	= $slave_status->{Read_Master_Log_Pos};
-
-	my $old_peer_ip	= $slave_status->{Master_Host};
-	_exit_error('No ip for old peer') unless ($old_peer_ip);
-
-	# Get connection info for old peer
-	my $old_peer = _find_host_by_ip($old_peer_ip);
-	_exit_error('Invalid master host in show slave status') unless ($old_peer);
-
-	_exit_ok('We are already a slave of the new master') if ($old_peer eq $new_peer);
-	
-	my ($old_peer_host, $old_peer_port, $old_peer_user, $old_peer_password)	= _get_connection_info($old_peer);
-	_exit_error("No connection info for new peer '$old_peer'") unless defined($old_peer_host);
-	
-	my $old_peer_dbh = _mysql_connect($old_peer_host, $old_peer_port, $old_peer_user, $old_peer_password);
-	if ($old_peer_dbh) {
-		my $old_master_status = $old_peer_dbh->selectrow_hashref('SHOW MASTER STATUS');
-		if (defined($old_master_status)) {
-			$wait_log = $old_master_status->{File};
-			$wait_pos = $old_master_status->{Position};
-		}
-		$old_peer_dbh->disconnect;
-	}
-
-	# Sync with logs
-	my $res = $this_dbh->do("SELECT MASTER_POS_WAIT('$wait_log', $wait_pos)");
-	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
-
-	# Stop slave
-	$res = $this_dbh->do('STOP SLAVE');
-	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
-	
+	# Get new peer's master log position (for change master)
 	# Connect to new peer
 	my $new_peer_dbh = _mysql_connect($new_peer_host, $new_peer_port, $new_peer_user, $new_peer_password);
 	_exit_error("Can't connect to MySQL (host = $new_peer_host:$new_peer_port, user = $new_peer_user)! " . $DBI::errstr) unless ($new_peer_dbh);
@@ -377,6 +364,81 @@ sub set_active_master($) {
 	my $master_pos = $new_master_status->{Position};
 
 	$new_peer_dbh->disconnect;
+
+
+	# Connect to local server
+	my $this_dbh = _mysql_connect($this_host, $this_port, $this_user, $this_password);
+	_exit_error("Can't connect to MySQL (host = $this_host:$this_port, user = $this_user)! " . $DBI::errstr) unless ($this_dbh);
+
+	my $wait_pos='';
+	my $old_wait_pos='';
+	my $chk_wait_pos='';
+	my $slave_status='';
+	my $last_sql_time='';
+	my $last_sql_error_pos='';
+
+	# Determine wait log and wait pos
+	do
+	{
+		$old_wait_pos = $wait_pos;
+
+		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
+		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
+
+		# if this host is a slave of the new master, exit !!
+		if ( $wait_pos eq '') {
+			my $old_peer_ip = $slave_status->{Master_Host};
+			_exit_error('No ip for old peer') unless ($old_peer_ip);
+
+			# Get connection info for old peer
+			my $old_peer = _find_host_by_ip($old_peer_ip);
+			_exit_error('Invalid master host in show slave status') unless ($old_peer);
+
+			_exit_ok('We are already a slave of the new master') if ($old_peer eq $new_peer);
+		}
+
+		$wait_pos = join(",", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
+		usleep(500 * 1000);
+	} while ($old_wait_pos ne $wait_pos);
+
+	$old_wait_pos = '';
+	$this_dbh->do('STOP SLAVE IO_THREAD');
+
+
+	# Sync with the relay log.
+	do
+	{
+		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
+		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
+
+		$wait_pos	= join(",", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
+		$chk_wait_pos	= join(",", $slave_status->{Relay_Master_Log_File}, $slave_status->{Exec_Master_Log_Pos});
+
+		if ($chk_wait_pos ne $old_wait_pos) {
+			$last_sql_time = time()
+		}
+		elsif (time() - $last_sql_time > 600) {
+			# give up
+			$chk_wait_pos = $wait_pos;
+		}
+
+		if ($slave_status->{Slave_SQL_Running} eq 'No') {
+			$this_dbh->do('SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1') if($chk_wait_pos eq $last_sql_error_pos);
+
+			# re-try
+			$this_dbh->do('START SLAVE SQL_THREAD');
+			$last_sql_error_pos = $chk_wait_pos;
+		}
+
+		$old_wait_pos = $chk_wait_pos;
+		usleep(200 * 1000);
+	} while ($wait_pos ne $chk_wait_pos) ;
+
+
+	# Stop slave
+	my $res = $this_dbh->do('STOP SLAVE');
+	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
+
 
 	# Get replication credentials
 	my ($repl_user, $repl_password) = _get_replication_credentials($new_peer);
@@ -396,7 +458,9 @@ sub set_active_master($) {
 	$res = $this_dbh->do('START SLAVE');
 	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
 
-	return 'OK';
+	$this_dbh->disconnect;
+
+	_exit_ok( "starting replication in log '" . $master_log . "' at position " . $master_pos );
 }
 
 

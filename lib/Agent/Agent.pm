@@ -195,6 +195,8 @@ sub cmd_set_status($$) {
 		DEBUG sprintf("Result: %s", defined($res) ? $res : 'undef');
 		if (defined($res) && $res =~ /^OK/) {
 			$self->active_master($new_master);
+			my @msg =split(':', $res);
+			INFO $msg[1];
 		}
 		else {
 			FATAL sprintf("Failed to change master to '%s': %s", $new_master, defined($res) ? $res : 'undef');
@@ -234,6 +236,8 @@ sub cmd_set_status($$) {
 
 		foreach my $role (@deleted_roles)	{ $role->del(); }
 		foreach my $role (@added_roles)		{ $role->add(); }
+
+		INFO 'Every role changes are applied.';
 
 		$self->roles(\@new_roles);
 	}

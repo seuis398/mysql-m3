@@ -811,20 +811,36 @@ sub send_agent_status($$$) {
 	$agent->roles(\@roles);
 
 	# Finally send command
-	my $ret = $agent->cmd_set_status($master);
+	my $ret = 0;
+	eval {
+		local $SIG{ALRM} = sub { die 'SOCK_TIMEOUT'; };
+		alarm 5;
 
-	unless ($ret) {
-		# If ping is down, nothing will be send to agent. So this doesn't indicate that the agent is down.
-		my $checks	= $self->checks_status;
-		if ($checks->ping($host) && !$agent->agent_down()) {
-			FATAL "Can't reach agent on host '$host'";
-			$agent->agent_down(1);
+		my $ret = $agent->cmd_set_status($master);
+
+		unless ($ret) {
+			# If ping is down, nothing will be send to agent. So this doesn't indicate that the agent is down.
+			my $checks      = $self->checks_status;
+			if ($checks->ping($host) && !$agent->agent_down()) {
+				FATAL "Can't reach agent on host '$host'";
+				$agent->agent_down(1);
+			}
 		}
+		elsif ($agent->agent_down) {
+			FATAL "Agent on host '$host' is reachable again";
+			$agent->agent_down(0);
+		}
+
+		alarm 0;
+	};
+
+	alarm 0;
+
+	if ($@ && $@ =~ /SOCK_TIMEOUT/) {
+		ERROR "agent on host '$host' is not responding (socket timeout).";
+		$agent->agent_down(1);
 	}
-	elsif ($agent->agent_down) {
-		FATAL "Agent on host '$host' is reachable again";
-		$agent->agent_down(0);
-	}
+
 	return $ret;
 }
 
