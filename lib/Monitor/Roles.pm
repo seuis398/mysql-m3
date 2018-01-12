@@ -449,6 +449,39 @@ sub process_orphans($$) {
 }
 
 
+=item check_no_eligible_host($)
+
+Check that there is no eligible host.
+
+=cut
+
+sub check_no_eligible_host($) {
+	my $self = shift;
+	my $agents = MMM::Monitor::Agents->instance();
+
+	foreach my $role (keys(%$self)) {
+		my $role_info = $self->{$role};
+		my $assigned_cnt = 0;
+		my $eligible_cnt = 0;
+               
+		# if all host is awaiting_recovery, skip auto passive mode
+		foreach my $host ( @{ $role_info->{hosts} } ) {
+			my $agent_state = $agents->{$host}->state ;
+			$eligible_cnt++ if ($agent_state ne 'AWAITING_RECOVERY');
+		}
+		return '' if ($eligible_cnt == 0);
+
+		# check mmm ip assignment
+		foreach my $ip (keys(%{$role_info->{ips}})) {
+			my $ip_info = $role_info->{ips}->{$ip};
+			$assigned_cnt++ if ($ip_info->{assigned_to} ne '');
+		}
+		return $role if ($assigned_cnt == 0);
+	}
+	return '';
+}
+
+
 =item obey_preferences
 
 Obey preferences by moving roles to preferred hosts

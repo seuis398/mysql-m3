@@ -373,6 +373,11 @@ sub main($) {
 		$self->_distribute_roles();
 		$self->send_status_to_agents();
 
+		my $orphan_role = $self->roles->check_no_eligible_host();
+		if ($orphan_role ne '') {
+			FATAL "There is no eligible host for '$orphan_role'. Never send anything to agents.";
+		}
+
 		# sleep 3 seconds, wake up if command queue gets filled
 		lock($command_queue);
 		cond_timedwait($command_queue, time() + 3); 
@@ -800,6 +805,9 @@ sub send_agent_status($$$) {
 	# Never send anything to agents if we are in PASSIVE mode
 	# Never send anything to agents if we have no network connection
 	return if ($self->is_passive || !$main::have_net);
+
+	# Never send anything to agents if role is orphaned
+	return if ($self->roles->check_no_eligible_host() ne '') ;
 
 	# Determine active master if it was not passed
 	$master = $self->roles->get_active_master() unless (defined($master));
