@@ -17,6 +17,7 @@ install_common:
 	cp -r bin/*  $(BINDIR)/
 	cp -r sbin/* $(BINDIR)/
 	cp -r etc/init.d/*  $(ETCDIR)/init.d/
+	chmod -R u+x $(BINDIR)
 
 	find $(ETCDIR)/init.d/ $(MODULEDIR)/MMM/ -type f -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 	find $(BINDIR)/ -type f -exec sed -i '/^#!\/usr\/bin\/env perl$$/ a BEGIN { unshift @INC,"$(MODULEDIR)"; }' {} \;
@@ -24,11 +25,13 @@ install_common:
 install_agent: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent
 	cp -r etc/mysql-mmm/mmm_agent.conf $(CONFDIR)/mmm_agent_example.conf
+	chmod 600 $(CONFDIR)/mmm_agent_example.conf
 	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 
 install_monitor: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-monitor $(INITDIR)/mysql-mmm-monitor
 	cp -r etc/mysql-mmm/mmm_mon.conf $(CONFDIR)/mmm_mon_example.conf
+	chmod 600 $(CONFDIR)/mmm_mon_example.conf
 	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 
 install: install_agent install_monitor
