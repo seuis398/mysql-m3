@@ -147,7 +147,7 @@ sub cmd_set_status($$) {
 	my $retries	= shift || 0;
 	my $ping_check  = 'OK';
 
-	my $p = Net::Ping->new("tcp");
+	my $p = Net::Ping->new("icmp");
 
 	foreach my $check_roles (@{$self->roles}) {
 		$check_roles =~ /(writer|reader)\((.*)\)/;
