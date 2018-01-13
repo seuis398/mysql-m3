@@ -55,7 +55,8 @@ sub ping() {
 }
 
 
-sub show() {
+sub show {
+	my $more	= shift || 'noop';
 	my $agents	= MMM::Monitor::Agents->instance();
 	my $monitor	= MMM::Monitor::Monitor->instance();
 	my $roles	= MMM::Monitor::Roles->instance();
@@ -70,6 +71,11 @@ sub show() {
 	$ret .= $roles->get_roles_info();
 	$ret .= $agents->get_status_info(1);
 	$ret .= $roles->get_preference_info();
+
+	if ($more eq 'more') {
+		$ret .= $agents->get_replication_status(1);
+		$ret .= $agents->get_version_info(1);
+	}
 	return $ret;
 }
 
@@ -465,7 +471,7 @@ sub help() {
 	return: "Valid commands are:
     help                              - show this message
     ping                              - ping monitor
-    show                              - show status
+    show [more]                       - show status
     checks [<host>|all [<check>|all]] - show checks status
     set_online <host>                 - set host <host> online
     set_offline <host>                - set host <host> offline

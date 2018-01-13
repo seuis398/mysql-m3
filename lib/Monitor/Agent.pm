@@ -19,6 +19,8 @@ struct 'MMM::Monitor::Agent' => {
 	ip                => '$',
 	port              => '$',
 	mysql_port        => '$',
+	monitor_user      => '$',
+	monitor_password  => '$',	
 
 	state             => '$',
 	roles             => '@',
@@ -162,6 +164,12 @@ sub cmd_get_agent_status($) {
 	my $self	= shift;
 	my $retries	= shift || 0;
 	return $self->_send_command_retry($retries, 'GET_AGENT_STATUS');
+}
+
+sub cmd_get_agent_version($) {                                                                                                               
+	my $self	= shift;
+	my $retries	= shift || 0;
+	return $self->_send_command_retry($retries, 'GET_AGENT_VERSION');
 }
 
 sub cmd_get_system_status($) {

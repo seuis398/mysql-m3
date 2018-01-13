@@ -24,6 +24,7 @@ if ($EVAL_ERROR) {
 }
 
 our $VERSION = '0.01';
+our $MMM_VERSION = '2.2.1';
 
 
 struct 'MMM::Agent::Agent' => {
@@ -94,6 +95,7 @@ sub handle_command($$) {
 	if		($cmd_name eq 'PING')				{ return cmd_ping						();			}
 	elsif	($cmd_name eq 'SET_STATUS')			{ return $self->cmd_set_status			(@params);	}
 	elsif	($cmd_name eq 'GET_AGENT_STATUS')	{ return $self->cmd_get_agent_status	();			}
+	elsif	($cmd_name eq 'GET_AGENT_VERSION')	{ return $self->cmd_get_agent_version	();			}
 	elsif	($cmd_name eq 'GET_SYSTEM_STATUS')	{ return $self->cmd_get_system_status	();			}
 	elsif	($cmd_name eq 'CLEAR_BAD_ROLES')	{ return $self->cmd_clear_bad_roles		();			}
 
@@ -113,6 +115,11 @@ sub cmd_get_agent_status($) {
 		$self->active_master
 	));
 	return "OK: Returning status!|$answer";
+}
+
+sub cmd_get_agent_version($) {
+	my $self	= shift;
+	return $MMM_VERSION;
 }
 
 sub cmd_get_system_status($) {

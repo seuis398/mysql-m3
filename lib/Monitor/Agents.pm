@@ -10,6 +10,7 @@ use File::Basename;
 use MMM::Monitor::Agent;
 use MMM::Monitor::Role;
 use Net::Ping;
+use DBI;
 
 
 
@@ -38,6 +39,8 @@ sub _new_instance($) {
 			ip		=> $main::config->{host}->{$host}->{ip},
 			port		=> $main::config->{host}->{$host}->{agent_port},
 			mysql_port	=> $main::config->{host}->{$host}->{mysql_port},
+			monitor_user	=> $main::config->{host}->{$host}->{monitor_user},
+			monitor_password=> $main::config->{host}->{$host}->{monitor_password},
 			state		=> 'UNKNOWN',
 			roles		=> [],
 			uptime		=> 0,
@@ -163,6 +166,80 @@ sub get_status_info($) {
 }
 
 
+=item get_replication_status
+
+Get Replication Status (realtime db query)
+Get MMM Vip Ping Status (use Net::Ping)
+
+=cut
+
+sub get_replication_status($) {
+	my $res  = '';
+	my $self = shift;
+
+	$res = sprintf("\n== Replication Status ==\n"); 
+
+	keys (%$self); # reset iterator
+	foreach my $host (sort(keys(%$self))) {
+		my $agent = $self->{$host};
+		next unless $agent;
+
+		my $check_dbh = _mysql_connect($agent->ip, $agent->mysql_port, $agent->monitor_user, $agent->monitor_password);
+		next unless($check_dbh);
+
+		my $slave_status = $check_dbh->selectrow_hashref("SHOW SLAVE STATUS");
+		if (defined($slave_status)) {
+			my $ss_master = $slave_status->{Master_Host};
+			my $ss_repl_thread = join('/', $slave_status->{Slave_IO_Running}, $slave_status->{Slave_SQL_Running});
+
+			my $ss_sbm = '-';
+			$ss_sbm = $slave_status->{Seconds_Behind_Master}  if ($slave_status->{Slave_IO_Running} eq "Yes" && $slave_status->{Slave_SQL_Running} eq "Yes");
+
+			my $read_only_status = $check_dbh->selectrow_hashref("SHOW GLOBAL VARIABLES LIKE 'read_only'"); 
+
+			$res .= sprintf("  %s [Master: %s | Replication_Thread: %s | Seconds_Behind_Master: %s | Read_Only = %-3s]\n"
+					, $agent->host, $ss_master, $ss_repl_thread, $ss_sbm, $read_only_status->{Value});
+		}
+		$check_dbh->disconnect;
+	}
+	return $res;
+}
+
+
+=item get_version_info 
+
+Get DB & Agent Version Information
+
+=cut
+
+sub get_version_info($) {
+	my $res  = '';
+	my $self = shift;
+
+	$res = sprintf("\n== Version Info ==\n");
+
+	keys (%$self); # reset iterator
+	foreach my $host (sort(keys(%$self))) {
+		my $agent = $self->{$host};
+		next unless $agent;
+
+		my $check_dbh = _mysql_connect($agent->ip, $agent->mysql_port, $agent->monitor_user, $agent->monitor_password);
+		next unless($check_dbh);
+
+		my $version_status = $check_dbh->selectrow_hashref("select version() as dbversion");
+		if (defined($version_status)) {
+			my $db_ver = $version_status->{dbversion};
+			my $mmm_ver = $agent->cmd_get_agent_version(1);
+			$mmm_ver = "Unknown" if ($mmm_ver =~ /^ERROR/);
+
+			$res .= sprintf("  %s [MySQL %s] - Agent: %s\n", $agent->host, $db_ver, $mmm_ver);
+		}
+		$check_dbh->disconnect;
+	}
+	return $res;
+}
+
+
 =item save_status
 
 Save status information into status file.
@@ -227,6 +304,13 @@ sub load_status($) {
 	}
 	close(STATUS);
 	return;
+}
+
+
+sub _mysql_connect($$$$) {
+	my ($host, $port, $user, $password) = @_;
+	my $dsn = "DBI:mysql:host=$host;port=$port;mysql_connect_timeout=3";
+	return DBI->connect($dsn, $user, $password, { PrintError => 0 });
 }
 
 1;

@@ -923,6 +923,7 @@ sub _process_commands($) {
 		if    ($command eq 'help'			&& $arg_cnt == 0) { $res = MMM::Monitor::Commands::help();							}
 		elsif ($command eq 'ping'			&& $arg_cnt == 0) { $res = MMM::Monitor::Commands::ping();							}
 		elsif ($command eq 'show'			&& $arg_cnt == 0) { $res = MMM::Monitor::Commands::show();							}
+		elsif ($command eq 'show'			&& $arg_cnt == 1) { $res = MMM::Monitor::Commands::show($args[0]);						}
 		elsif ($command eq 'checks'			&& $arg_cnt == 0) { $res = MMM::Monitor::Commands::checks();						}
 		elsif ($command eq 'checks'			&& $arg_cnt == 1) { $res = MMM::Monitor::Commands::checks($args[0]);				}
 		elsif ($command eq 'checks'			&& $arg_cnt == 2) { $res = MMM::Monitor::Commands::checks($args[0], $args[1]);		}
