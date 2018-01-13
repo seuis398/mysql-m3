@@ -1,3 +1,5 @@
+include VERSION
+
 ifndef PREFIX
 	PREFIX = /usr/local/mysql-mmm
 endif
@@ -21,12 +23,14 @@ install_common:
 
 	find $(ETCDIR)/init.d/ $(MODULEDIR)/MMM/ -type f -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 	find $(BINDIR)/ -type f -exec sed -i '/^#!\/usr\/bin\/env perl$$/ a BEGIN { unshift @INC,"$(MODULEDIR)"; }' {} \;
+	find $(BINDIR)/mmm_* -exec vi -c "%s/2.2.1/$(VERSION) (mysql-m3)/g" -c "wq" "{}" \;	
 
 install_agent: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent
 	cp -r etc/mysql-mmm/mmm_agent.conf $(CONFDIR)/mmm_agent_example.conf
 	chmod 600 $(CONFDIR)/mmm_agent_example.conf
 	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
+	find $(MODULEDIR)/MMM/Agent/Agent.pm -exec vi -c "%s/2.2.1/$(VERSION) (mysql-m3)/g" -c "wq" "{}" \;
 
 install_monitor: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-monitor $(INITDIR)/mysql-mmm-monitor
