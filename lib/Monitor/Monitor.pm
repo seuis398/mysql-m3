@@ -1066,7 +1066,7 @@ sub get_monitor_info($) {
 	$res .= sprintf("  Check ping        : every %d seconds, trap %d seconds\n", $main::config->{check}->{ping}->{check_period}, $main::config->{check}->{ping}->{trap_period});
 	$res .= sprintf("  Check mysql       : every %d seconds, trap %d seconds\n", $main::config->{check}->{mysql}->{check_period}, $main::config->{check}->{mysql}->{trap_period});
 	$res .= sprintf("  Check rep_threads : every %d seconds, trap %d seconds\n", $main::config->{check}->{rep_threads}->{check_period}, $main::config->{check}->{rep_threads}->{trap_period});
-	$res .= sprintf("  Check rep_backlog : every %d seconds, max_delay %d seconds\n", $main::config->{check}->{rep_backlog}->{check_period}, $main::config->{check}->{rep_backlog}->{max_backlog});
+	$res .= sprintf("  Check rep_backlog : every %d seconds, trap %d seconds, max_delay %d seconds\n", $main::config->{check}->{rep_backlog}->{check_period}, $main::config->{check}->{rep_backlog}->{trap_period}, $main::config->{check}->{rep_backlog}->{max_backlog});
 	$res .= sprintf("  Uptime            : %s\n\n", $uptime_str);
 
 	return $res;

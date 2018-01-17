@@ -106,7 +106,7 @@ our $RULESET = {
 		'trap_period'			=> { 'default' => 10 },
 		'timeout'				=> { 'default' => 2 },
 		'restart_after'			=> { 'default' => 10000 },
-		'max_backlog'			=> { 'default' => 60 }		# XXX ugly
+		'max_backlog'			=> { 'default' => 28800 }		# XXX ugly
 		}
 	}
 };
