@@ -20,6 +20,7 @@ install_common:
 	cp -r sbin/* $(BINDIR)/
 	cp -r etc/init.d/*  $(ETCDIR)/init.d/
 	chmod -R u+x $(BINDIR)
+	chmod u+x $(ETCDIR)/init.d/*
 
 	find $(ETCDIR)/init.d/ $(MODULEDIR)/MMM/ -type f -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 	find $(BINDIR)/ -type f -exec sed -i '/^#!\/usr\/bin\/env perl$$/ a BEGIN { unshift @INC,"$(MODULEDIR)"; }' {} \;
