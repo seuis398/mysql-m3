@@ -12,6 +12,10 @@ ETCDIR    = $(PREFIX)/etc
 TMPDIR    = $(PREFIX)/tmp
 INITDIR   = /etc/init.d
 
+PERL_VER := $(shell sh PERL_VERSION)
+HW_PLATFORM := $(shell uname -i)
+PERL_LIBS = lib/perl_libs_$(PERL_VER)_$(HW_PLATFORM).tar.gz
+
 install_common:
 	mkdir -p $(MODULEDIR)/MMM $(BINDIR) $(LOGDIR) $(CONFDIR) $(ETCDIR)/init.d $(TMPDIR)
 
@@ -25,6 +29,12 @@ install_common:
 	find $(ETCDIR)/init.d/ $(MODULEDIR)/MMM/ -type f -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
 	find $(BINDIR)/ -type f -exec sed -i '/^#!\/usr\/bin\/env perl$$/ a BEGIN { unshift @INC,"$(MODULEDIR)"; }' {} \;
 	find $(BINDIR)/mmm_* -exec vi -c "%s/2.2.1/$(VERSION) (mysql-m3)/g" -c "wq" "{}" \;	
+
+	if [ -f $(PERL_LIBS) ]; \
+	then tar xfz $(PERL_LIBS) --directory=$(MODULEDIR); \
+	fi
+	echo $(MODULEDIR) > /etc/ld.so.conf.d/mysql-mmm.conf
+	/sbin/ldconfig
 
 install_agent: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent
