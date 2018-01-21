@@ -8,7 +8,7 @@ mysql-mmm 프로젝트는 2009년 이후 업데이트되고 있지 않으며, my
 
 ### 요구사항
 - Redhat 계열 Linux (RHEL, CentOS, Oracle Linux)
-- Perl 5.8, Perl 5.10 (perl 버전이 다른 경우 하단 설명 참조)
+- Perl 5.8, Perl 5.10, Perl 5.16 (perl 버전이 다른 경우 하단 설명 참조)
 - 모니터 전용 서버 (권장) 
 
 ### 설치
