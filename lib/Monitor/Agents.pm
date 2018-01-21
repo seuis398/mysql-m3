@@ -231,6 +231,7 @@ sub get_version_info($) {
 			my $db_ver = $version_status->{dbversion};
 			my $mmm_ver = $agent->cmd_get_agent_version(1);
 			$mmm_ver = "Unknown" if ($mmm_ver =~ /^ERROR/);
+			$mmm_ver = "not connected" if ($mmm_ver eq '0');
 
 			$res .= sprintf("  %s [MySQL %s] - Agent: %s\n", $agent->host, $db_ver, $mmm_ver);
 		}
