@@ -132,13 +132,13 @@ sub send_arp($$) {
 
 
 	if ($OSNAME eq 'linux' || $OSNAME eq 'freebsd') {
-		my $mac = '';
-		if ($Net::ARP::VERSION < 1.0) {
-			Net::ARP::get_mac($if, $mac);
-		}
-		else {
-			$mac = Net::ARP::get_mac($if);
-		}
+		my $mac = Net::ARP::get_mac($if);
+		# if ($Net::ARP::VERSION < 1.0) {
+		# 	Net::ARP::get_mac($if, $mac);
+		# }
+		# else {
+		# 	$mac = Net::ARP::get_mac($if);
+		# }
 		return "ERROR: Couldn't get mac adress of interface $if" unless ($mac);
 
 		for (my $i = 0; $i < 5; $i++) {
