@@ -2,9 +2,9 @@ MYSQL-M3
 ======================
 
 ### 소개
-mysql-m3는 [mysql-mmm](http://mysql-mmm.org)의 fork product 입니다.<br />
-mysql-mmm은 mysql replication 구조하에서 mysql 장애 발생시 vip 절체 및 replication 구조 변경을 자동화합니다.<br />
-mysql-mmm 프로젝트는 2009년 이후 업데이트되고 있지 않으며, mysql-m3는 mysql-mmm의 기능 개선, 버그 패치 등을 포함하고 있습니다.
+- mysql-m3는 [mysql-mmm](http://mysql-mmm.org)의 fork product 입니다.
+- mysql-mmm은 mysql replication 구조하에서 mysql 장애 발생시 vip 절체 및 replication 구조 변경을 자동화합니다.
+- mysql-mmm 프로젝트는 2009년 이후 업데이트되고 있지 않으며, mysql-m3는 mysql-mmm의 기능 개선, 버그 패치 등을 포함하고 있습니다.
 
 ### 요구사항
 - Redhat 계열 Linux (RHEL, CentOS, Oracle Linux)
@@ -32,7 +32,7 @@ CREATE USER {MMM_USER}@{접속IP} IDENTIFIED BY 'xxxx' ;
 GRANT SUPER, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
 ```
 
-#### 4) 모니터 설정
+#### 4) 모니터 설정 (추가)
 - 설치경로/conf/mmm_mon_{Cluster}.conf 파일을 생성합니다. (mmm_mon_example.conf 참고)
 - Cluster 값은 모니터 데몬의 port로 사용되므로, port range를 고려해서 결정해야 합니다.
 - exclusive 속성의 role(writer) 1개는 필수, balanced 속성의 role (reader)는 옵션입니다. 
@@ -70,13 +70,17 @@ Valid commands are:
     set_ip <ip> <host>                - set role with ip <ip> to host <host>
 ```
 
-### Perl 버전이 다른 경우
-아래와 같은 Perl 모듈을 별도 설치 합니다. (CPAN 사용)
+### 기타
+#### 1) MMM Tools
+- mysql-m3에서는 mysql-mmm이 제공하던 mmm tools의 동작(LVM Snapshot 등)을 보장하지 않습니다.
+  
+#### 2) Perl 버전이 다른 경우
+- 아래 Perl 모듈을 별도 설치 합니다. (CPAN 사용)
 ```
 Algorithm::Diff
-Attribute::Params::Validate
 Class:Singleton
 DBI and DBD::mysql
+Data::Dumper
 Date::Format
 Date::Language
 Date::Parse
@@ -92,6 +96,10 @@ Net::ARP
 Net::Ping
 Params::Validate
 Proc::Daemon
-Time::HiRes
 Thread::Queue
+Time::HiRes
 ```
+
+#### 3) mysql-mmm manual
+- 기본적인 동작은 mysql-mmm과 유사하므로, mysql-mmm의 manual을 참고해도 됩니다.
+- http://mysql-mmm.org/_media/:mmm2:mysql-mmm-2.2.1.pdf
