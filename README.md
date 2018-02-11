@@ -29,7 +29,7 @@ $ make install_agent PREFIX=/path/you/want
 - 모니터 서버와 각 에이전트(mysql 서버)의 IP로 모두 접속이 가능해야 합니다. 
 ```
 CREATE USER {MMM_USER}@{접속IP} IDENTIFIED BY 'xxxx' ;
-GRANT SUPER, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
+GRANT PROCESS, SUPER, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
 ```
 
 #### 4) 모니터 설정 (추가)
