@@ -282,18 +282,16 @@ sub sync_with_master() {
 	# Determine wait log and wait pos
 	do
 	{
-		$old_wait_pos = $wait_pos;
+		usleep(500 * 1000);
 
 		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS');
 		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
+	} while ($slave_status->{Master_Log_File} ne $slave_status->{Relay_Master_Log_File} 
+		or
+		$slave_status->{Read_Master_Log_Pos} - $slave_status->{Exec_Master_Log_Pos} > 1024 * 1024);
 
-		$wait_pos = join(":", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
-		usleep(500 * 1000);
-	} while ($old_wait_pos ne $wait_pos) ;
-
-	$old_wait_pos = '';
+	sleep(2);
 	$this_dbh->do('STOP SLAVE IO_THREAD');
-
 
 	# Sync with the relay log.
 	do
@@ -313,7 +311,10 @@ sub sync_with_master() {
 		}
 
 		if ($slave_status->{Slave_SQL_Running} eq 'No') {
-			$this_dbh->do('SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1') if($chk_wait_pos eq $last_sql_error_pos);
+			if($chk_wait_pos eq $last_sql_error_pos) {
+				$this_dbh->do('START SLAVE IO_THREAD');
+				_exit_error('SQL Thread Error !!');
+			}
 
 			# re-try
 			$this_dbh->do('START SLAVE SQL_THREAD');
@@ -454,7 +455,10 @@ sub set_active_master($) {
 			}
 
 			if ($slave_status->{Slave_SQL_Running} eq 'No') {
-				$this_dbh->do('SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1') if($chk_wait_pos eq $last_sql_error_pos);
+				if($chk_wait_pos eq $last_sql_error_pos) {
+					$this_dbh->do('START SLAVE IO_THREAD');
+					_exit_error('SQL Thread Error !!');
+				}
 
 				# re-try
 				$this_dbh->do('START SLAVE SQL_THREAD');
