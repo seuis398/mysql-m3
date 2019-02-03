@@ -27,9 +27,16 @@ $ make install_agent PREFIX=/path/you/want
 
 #### 3) MMM 접속 DB 계정 생성
 - 모니터 서버와 각 에이전트(mysql 서버)의 IP로 모두 접속이 가능해야 합니다. 
+- MySQL 5.7 이하
 ```
-CREATE USER {MMM_USER}@{접속IP} IDENTIFIED BY 'xxxx' ;
+CREATE USER {MMM_USER}@{접속IP} IDENTIFIED BY 'xxxx';
 GRANT PROCESS, SUPER, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
+```
+- MySQL 8.0 이상 
+```
+CREATE USER {MMM_USER}@{접속IP} IDENTIFIED WITH mysql_native_password BY 'xxxx';
+GRANT PROCESS, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
+GRANT CONNECTION_ADMIN, REPLICATION_SLAVE_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO {MMM_USER}@{접속IP};
 ```
 
 #### 4) 모니터 설정 (추가)
@@ -40,6 +47,10 @@ GRANT PROCESS, SUPER, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
 
 #### 5) 에이전트 설정
 - 설치경로/conf/mmm_agent.conf 파일을 생성합니다. (mmm_agent_example.conf 참고)
+
+### DB 복제 구성
+- Writer role을 가질 2대의 DB간 양방향 복제 구성 필요합니다.
+- 그 외 DB는 최초 writer role을 할당받을 DB의 slave로 구성합니다.
 
 ### 데몬 구동
 #### 1) 모니터 데몬 구동
