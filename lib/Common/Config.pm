@@ -13,100 +13,100 @@ our $VERSION = '0.01';
 # TODO remember which config file was read
 
 our $RULESET = {
-	'this'					=> { 'required' => ['AGENT', 'TOOLS'], 'refvalues' => 'host' },
-	'debug'					=> { 'default' => 0, 'boolean' => 1 },
+	'this'			=> { 'required' => ['AGENT', 'TOOLS'], 'refvalues' => 'host' },
+	'debug'			=> { 'default' => 0, 'boolean' => 1 },
 	'active_master_role'	=> { 'required' => ['AGENT', 'MONITOR'], 'refvalues' => 'role' },
-	'max_kill_retries'		=> { 'default' => 10, 'required' => ['AGENT'] },
+	'max_kill_retries'	=> { 'default' => 10, 'required' => ['AGENT'] },
 	'default_copy_method'	=> { 'required' => ['TOOLS'], 'refvalues' => 'copy_method' },
-	'clone_dirs'			=> { 'required' => ['TOOLS'], 'multiple' => 1 },
-	'role'					=> { 'required' => ['AGENT', 'MONITOR'], 'multiple' => 1, 'section' => {
-		'mode'					=> { 'required' => ['MONITOR'], 'values' => ['balanced', 'exclusive'] },
-		'hosts'					=> { 'required' => ['MONITOR'], 'refvalues' => 'host', 'multiple' => 1 },
-		'ips'					=> { 'required' => ['AGENT', 'MONITOR'], 'multiple' => 1 },
-		'prefer'				=> { 'refvalues' => 'hosts' }
+	'clone_dirs'		=> { 'required' => ['TOOLS'], 'multiple' => 1 },
+	'role'			=> { 'required' => ['AGENT', 'MONITOR'], 'multiple' => 1, 'section' => {
+		'mode'			=> { 'required' => ['MONITOR'], 'values' => ['balanced', 'exclusive'] },
+		'hosts'			=> { 'required' => ['MONITOR'], 'refvalues' => 'host', 'multiple' => 1 },
+		'ips'			=> { 'required' => ['AGENT', 'MONITOR'], 'multiple' => 1 },
+		'prefer'		=> { 'refvalues' => 'hosts' }
 		}
 	},
-	'monitor'				=> { 'required' => ['MONITOR', 'CONTROL'], 'section' => {
-		'ip'					=> { 'required' => ['MONITOR', 'CONTROL'] },
-		'port'					=> { 'default' => '9988' },
-		'pid_path'				=> { 'required' => ['MONITOR'] },
-		'bin_path'				=> { 'required' => ['MONITOR'] },
-		'status_path'			=> { 'required' => ['MONITOR'] },
-		'ping_interval'			=> { 'default' => 1 },
-		'ping_ips'				=> { 'required' => ['MONITOR'], 'multiple' => 1 },
-		'flap_duration'			=> { 'default' => 60 * 60 },
-		'flap_count'			=> { 'default' => 3 },
-		'auto_set_online'		=> { 'default' => 0 },
-		'kill_host_bin'			=> { 'default' => 'kill_host' },
-		'careful_startup'		=> { 'default' => 1, 'boolean' => 1 },
-		'mode'					=> { 'default' => 'active', 'values' => ['passive', 'active', 'manual', 'wait'] },
+	'monitor'		=> { 'required' => ['MONITOR', 'CONTROL'], 'section' => {
+		'ip'			=> { 'required' => ['MONITOR', 'CONTROL'] },
+		'port'			=> { 'default' => '9988' },
+		'pid_path'		=> { 'required' => ['MONITOR'] },
+		'bin_path'		=> { 'required' => ['MONITOR'] },
+		'status_path'		=> { 'required' => ['MONITOR'] },
+		'ping_interval'		=> { 'default' => 1 },
+		'ping_ips'		=> { 'required' => ['MONITOR'], 'multiple' => 1 },
+		'flap_duration'		=> { 'default' => 60 * 60 },
+		'flap_count'		=> { 'default' => 3 },
+		'auto_set_online'	=> { 'default' => 0 },
+		'kill_host_bin'		=> { 'default' => 'kill_host' },
+		'careful_startup'	=> { 'default' => 1, 'boolean' => 1 },
+		'mode'			=> { 'default' => 'active', 'values' => ['passive', 'active', 'manual', 'wait'] },
 		'wait_for_other_master'	=> { 'default' => 120 }
 		}
 	},
-	'socket'				=> { 'create_if_empty' => ['AGENT', 'CONTROL', 'MONITOR'], 'section' => {
-		'type'					=> { 'default' => 'plain', 'required' => ['AGENT', 'CONTROL', 'MONITOR'], 'values' => [ 'plain', 'ssl' ] },
-		'cert_file'				=> { 'deprequired' => { 'type' => 'ssl' }, 'required' => [ 'AGENT', 'CONTROL', 'MONITOR'] },
-		'key_file'				=> { 'deprequired' => { 'type' => 'ssl' }, 'required' => [ 'AGENT', 'CONTROL', 'MONITOR'] },
-		'ca_file'				=> { 'deprequired' => { 'type' => 'ssl' }, 'required' => [ 'AGENT', 'MONITOR'] }
+	'socket'		=> { 'create_if_empty' => ['AGENT', 'CONTROL', 'MONITOR'], 'section' => {
+		'type'			=> { 'default' => 'plain', 'required' => ['AGENT', 'CONTROL', 'MONITOR'], 'values' => [ 'plain', 'ssl' ] },
+		'cert_file'		=> { 'deprequired' => { 'type' => 'ssl' }, 'required' => [ 'AGENT', 'CONTROL', 'MONITOR'] },
+		'key_file'		=> { 'deprequired' => { 'type' => 'ssl' }, 'required' => [ 'AGENT', 'CONTROL', 'MONITOR'] },
+		'ca_file'		=> { 'deprequired' => { 'type' => 'ssl' }, 'required' => [ 'AGENT', 'MONITOR'] }
 		}
 	},
-	'copy_method'			=> { 'required' => ['TOOLS'], 'multiple' => 1, 'template' => 'default', 'section' => {
-		'backup_command'		=> { 'required' => 1 },
-		'restore_command'		=> { 'required' => 1 },
+	'copy_method'		=> { 'required' => ['TOOLS'], 'multiple' => 1, 'template' => 'default', 'section' => {
+		'backup_command'	=> { 'required' => 1 },
+		'restore_command'	=> { 'required' => 1 },
 		'incremental_command'	=> { 'deprequired' => { 'incremental' => 1 } },
-		'incremental'			=> { 'default' => 0, 'boolean' => 1 },
-		'single_run'			=> { 'default' => 0, 'boolean' => 1 },
-		'true_copy'				=> { 'default' => 0, 'boolean' => 1 },
+		'incremental'		=> { 'default' => 0, 'boolean' => 1 },
+		'single_run'		=> { 'default' => 0, 'boolean' => 1 },
+		'true_copy'		=> { 'default' => 0, 'boolean' => 1 },
 		}
 	},
-	'host'					=> { 'required' => 1, 'multiple' => 1, 'template' => 'default', 'section' => {
-		'ip'					=> { 'required' => ['AGENT', 'MONITOR', 'TOOLS'] },
-		'mode'					=> { 'required' => ['AGENT', 'MONITOR'], 'values' => ['master', 'slave'] },
-		'peer'					=> { 'deprequired' => { 'mode' => 'master' }, 'refvalues' => 'host' },
+	'host'			=> { 'required' => 1, 'multiple' => 1, 'template' => 'default', 'section' => {
+		'ip'			=> { 'required' => ['AGENT', 'MONITOR', 'TOOLS'] },
+		'mode'			=> { 'required' => ['AGENT', 'MONITOR'], 'values' => ['master', 'slave'] },
+		'peer'			=> { 'deprequired' => { 'mode' => 'master' }, 'refvalues' => 'host' },
 
-		'pid_path'				=> { 'required' => ['AGENT'] },
-		'bin_path'				=> { 'required' => ['AGENT'] },
-		'agent_port'			=> { 'default' => 9989 },
-		'cluster_interface'		=> { 'required' => ['AGENT'] },
+		'pid_path'		=> { 'required' => ['AGENT'] },
+		'bin_path'		=> { 'required' => ['AGENT'] },
+		'agent_port'		=> { 'default' => 9989 },
+		'cluster_interface'	=> { 'required' => ['AGENT'] },
 
-		'mysql_port'			=> { 'default' => 3306 },
-		'mysql_pidfile'			=> { 'default' => '/var/run/mysqld/mysqld.pid' },
-		'mysql_rcscript'		=> { 'default' => '/etc/init.d/mysql' },
-		'mysql_cnf'				=> { 'default' => '/etc/my.cnf' },
+		'mysql_port'		=> { 'default' => 3306 },
+		'mysql_pidfile'		=> { 'default' => '/var/run/mysqld/mysqld.pid' },
+		'mysql_rcscript'	=> { 'default' => '/etc/init.d/mysql' },
+		'mysql_cnf'		=> { 'default' => '/etc/my.cnf' },
 
-		'agent_user'			=> { 'required' => ['AGENT'] },
-		'agent_password'		=> { 'required' => ['AGENT'] },
+		'agent_user'		=> { 'required' => ['AGENT'] },
+		'agent_password'	=> { 'required' => ['AGENT'] },
 
-		'monitor_user'			=> { 'required' => ['MONITOR'] },
-		'monitor_password'		=> { 'required' => ['MONITOR'] },
+		'monitor_user'		=> { 'required' => ['MONITOR'] },
+		'monitor_password'	=> { 'required' => ['MONITOR'] },
 
-		'replication_user'		=> { 'required' => ['AGENT', 'TOOLS'] },
+		'replication_user'	=> { 'required' => ['AGENT', 'TOOLS'] },
 		'replication_password'	=> { 'required' => ['AGENT', 'TOOLS'] },
 
-		'ssh_user'				=> { 'required' => ['TOOLS'] },
-		'ssh_port'				=> { 'default' => 22 },
-		'ssh_parameters'		=> { 'default' => '' },
-		'tools_user'			=> { 'required' => ['TOOLS'] },
-		'tools_password'		=> { 'required' => ['TOOLS'] },
+		'ssh_user'		=> { 'required' => ['TOOLS'] },
+		'ssh_port'		=> { 'default' => 22 },
+		'ssh_parameters'	=> { 'default' => '' },
+		'tools_user'		=> { 'required' => ['TOOLS'] },
+		'tools_password'	=> { 'required' => ['TOOLS'] },
 
-		'backup_dir'			=> { 'required' => ['TOOLS'] },
-		'restore_dir'			=> { 'required' => ['TOOLS'] },
+		'backup_dir'		=> { 'required' => ['TOOLS'] },
+		'restore_dir'		=> { 'required' => ['TOOLS'] },
 
-		'lvm_bin_lvcreate'		=> { 'default' => 'lvcreate' },
-		'lvm_bin_lvremove'		=> { 'default' => 'lvremove' },
-		'lvm_snapshot_size'		=> { 'required' => ['TOOLS'] },
+		'lvm_bin_lvcreate'	=> { 'default' => 'lvcreate' },
+		'lvm_bin_lvremove'	=> { 'default' => 'lvremove' },
+		'lvm_snapshot_size'	=> { 'required' => ['TOOLS'] },
 		'lvm_logical_volume'	=> { 'required' => ['TOOLS'] },
-		'lvm_volume_group'		=> { 'required' => ['TOOLS'] },
-		'lvm_mount_dir'			=> { 'required' => ['TOOLS'] },
-		'lvm_mount_opts'		=> { 'required' => ['TOOLS'] },
+		'lvm_volume_group'	=> { 'required' => ['TOOLS'] },
+		'lvm_mount_dir'		=> { 'required' => ['TOOLS'] },
+		'lvm_mount_opts'	=> { 'required' => ['TOOLS'] },
 		}
 	},
-	'check'					=> { 'create_if_empty' => ['MONITOR'], 'multiple' => 1, 'template' => 'default', 'values' => ['ping', 'mysql', 'rep_backlog', 'rep_threads'], 'section' => {
-		'check_period'			=> { 'default' => 5 },
-		'trap_period'			=> { 'default' => 10 },
-		'timeout'				=> { 'default' => 2 },
-		'restart_after'			=> { 'default' => 10000 },
-		'max_backlog'			=> { 'default' => 28800 }		# XXX ugly
+	'check'			=> { 'create_if_empty' => ['MONITOR'], 'multiple' => 1, 'template' => 'default', 'values' => ['ping', 'mysql', 'rep_backlog', 'rep_threads'], 'section' => {
+		'check_period'		=> { 'default' => 5 },
+		'trap_period'		=> { 'default' => 10 },
+		'timeout'		=> { 'default' => 2 },
+		'restart_after'		=> { 'default' => 10000 },
+		'max_backlog'		=> { 'default' => 28800 }		# XXX ugly
 		}
 	}
 };
