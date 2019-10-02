@@ -304,10 +304,20 @@ CONNECT2: {
 	}
 }
 
+	my $master1_channel_option = "";
+	if (defined($master1_info->{rep_channel}) && $master1_info->{rep_channel} ne '') {
+		$master1_channel_option = " FOR CHANNEL '" . $master1_info->{rep_channel} . "'";
+	}
+
+	my $master2_channel_option = "";
+	if (defined($master2_info->{rep_channel}) && $master2_info->{rep_channel} ne '') {
+		$master2_channel_option = " FOR CHANNEL '" . $master2_info->{rep_channel} . "'";
+	}
+	
 
 	# Check replication peers
-	my $slave_status1 = $dbh1->selectrow_hashref('SHOW SLAVE STATUS');
-	my $slave_status2 = $dbh2->selectrow_hashref('SHOW SLAVE STATUS');
+	my $slave_status1 = $dbh1->selectrow_hashref('SHOW SLAVE STATUS' . $master1_channel_option);
+	my $slave_status2 = $dbh2->selectrow_hashref('SHOW SLAVE STATUS' . $master2_channel_option);
 
 	WARN "$master1 is not replicating from $master2" if (!defined($slave_status1) || $slave_status1->{Master_Host} ne $master2_info->{ip});
 	WARN "$master2 is not replicating from $master1" if (!defined($slave_status2) || $slave_status2->{Master_Host} ne $master1_info->{ip});

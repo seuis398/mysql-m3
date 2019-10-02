@@ -82,6 +82,7 @@ our $RULESET = {
 
 		'replication_user'	=> { 'required' => ['AGENT', 'TOOLS'] },
 		'replication_password'	=> { 'required' => ['AGENT', 'TOOLS'] },
+		'replication_channel'   => { 'default' => '' },
 
 		'ssh_user'		=> { 'required' => ['TOOLS'] },
 		'ssh_port'		=> { 'default' => 22 },

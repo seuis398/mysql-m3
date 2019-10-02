@@ -160,6 +160,13 @@ sub rep_backlog($$) {
 	my ($peer_host, $peer_port, $peer_user, $peer_password) = _get_connection_info($host);
 	return "ERROR: Invalid host '$host'" unless ($peer_host);
 
+	my $repl_channel = _get_replication_channel($host);
+	my $channel_option = "";
+	if (defined($repl_channel) && $repl_channel ne '') {
+		$channel_option = " FOR CHANNEL '" . $repl_channel . "'";
+	}
+
+
 	my $mask = POSIX::SigSet->new( SIGALRM );
 	my $action = POSIX::SigAction->new(
 		sub { die 'TIMEOUT'; },
@@ -180,7 +187,7 @@ sub rep_backlog($$) {
 		}
 	
 		# Check server (replication backlog)
-		my $sth = $dbh->prepare('SHOW SLAVE STATUS');
+		my $sth = $dbh->prepare('SHOW SLAVE STATUS' . $channel_option);
 		my $res = $sth->execute;
 
 		if ($dbh->err) {
@@ -243,6 +250,13 @@ sub rep_threads($$) {
 	my ($peer_host, $peer_port, $peer_user, $peer_password) = _get_connection_info($host);
 	return "ERROR: Invalid host '$host'" unless ($peer_host);
 
+	my $repl_channel = _get_replication_channel($host);
+	my $channel_option = "";
+	if (defined($repl_channel) && $repl_channel ne '') {
+		$channel_option = " FOR CHANNEL '" . $repl_channel . "'";
+	}
+
+
 	my $mask = POSIX::SigSet->new( SIGALRM );
 	my $action = POSIX::SigAction->new(
 		sub { die 'TIMEOUT'; },
@@ -260,7 +274,7 @@ sub rep_threads($$) {
 		return "UNKNOWN: Connect error (host = $peer_host:$peer_port, user = $peer_user)! " . $DBI::errstr unless ($dbh);
 	
 		# Check server (replication backlog)
-		my $sth = $dbh->prepare('SHOW SLAVE STATUS');
+		my $sth = $dbh->prepare('SHOW SLAVE STATUS' . $channel_option);
 		my $res = $sth->execute;
 
 		if ($dbh->err) {
@@ -322,6 +336,23 @@ sub _get_connection_info($) {
 		$main::config->{host}->{$host}->{monitor_user},
 		$main::config->{host}->{$host}->{monitor_password}
 	);
+}
+
+
+=item _get_replication_channel($)
+
+Get replication channel name
+
+=cut
+
+sub _get_replication_channel($) {
+	my $host = shift;
+	return undef unless ($host);
+
+	_exit_error('No config present') unless (defined($main::config));
+	_exit_error('No config present') unless (defined($main::config->{host}->{$host}));
+
+	return $main::config->{host}->{$host}->{replication_channel};
 }
 
 

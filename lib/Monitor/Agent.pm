@@ -21,6 +21,7 @@ struct 'MMM::Monitor::Agent' => {
 	mysql_port        => '$',
 	monitor_user      => '$',
 	monitor_password  => '$',	
+	repl_channel      => '$', 
 
 	state             => '$',
 	roles             => '@',

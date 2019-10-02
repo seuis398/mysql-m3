@@ -41,6 +41,7 @@ sub _new_instance($) {
 			mysql_port	=> $main::config->{host}->{$host}->{mysql_port},
 			monitor_user	=> $main::config->{host}->{$host}->{monitor_user},
 			monitor_password=> $main::config->{host}->{$host}->{monitor_password},
+			repl_channel	=> $main::config->{host}->{$host}->{replication_channel},
 			state		=> 'UNKNOWN',
 			roles		=> [],
 			uptime		=> 0,
@@ -175,6 +176,8 @@ Get MMM Vip Ping Status (use Net::Ping)
 
 sub get_replication_status($) {
 	my $res  = '';
+	my $channel_option = '';
+	my $channel_info = '';
 	my $self = shift;
 
 	$res = sprintf("\n== Replication Status ==\n"); 
@@ -187,7 +190,12 @@ sub get_replication_status($) {
 		my $check_dbh = _mysql_connect($agent->ip, $agent->mysql_port, $agent->monitor_user, $agent->monitor_password);
 		next unless($check_dbh);
 
-		my $slave_status = $check_dbh->selectrow_hashref("SHOW SLAVE STATUS");
+		if (defined($agent->repl_channel) && $agent->repl_channel ne '') {
+			$channel_option = " FOR CHANNEL '" . $agent->repl_channel . "'";
+			$channel_info = " | Channel_Name: " . $agent->repl_channel;
+		}
+
+		my $slave_status = $check_dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
 		if (defined($slave_status)) {
 			my $ss_master = $slave_status->{Master_Host};
 			my $ss_repl_thread = join('/', $slave_status->{Slave_IO_Running}, $slave_status->{Slave_SQL_Running});
@@ -197,8 +205,8 @@ sub get_replication_status($) {
 
 			my $read_only_status = $check_dbh->selectrow_hashref("SHOW GLOBAL VARIABLES LIKE 'read_only'"); 
 
-			$res .= sprintf("  %s [Master: %s | Replication_Thread: %s | Seconds_Behind_Master: %s | Read_Only = %-3s]\n"
-					, $agent->host, $ss_master, $ss_repl_thread, $ss_sbm, $read_only_status->{Value});
+			$res .= sprintf("  %s [Master: %s | Replication_Thread: %s | Seconds_Behind_Master: %s | Read_Only: %-3s%s]\n"
+					,$agent->host, $ss_master, $ss_repl_thread, $ss_sbm, $read_only_status->{Value}, $channel_info);
 		}
 		$check_dbh->disconnect;
 	}
