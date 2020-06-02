@@ -42,7 +42,7 @@ sub state {
 	my $self = shift;
 	if (@_) {
 		my $new_state = shift;
-		my $old_state = $self->{'MMM::Monitor::Agent::state'};
+		my $old_state = defined($self->{'MMM::Monitor::Agent::state'}) ? $self->{'MMM::Monitor::Agent::state'} : '';
 
 		$self->last_state_change(time()) if ($old_state ne $new_state);
 		$self->online_since(time())      if ($old_state ne $new_state && $new_state eq 'ONLINE');
