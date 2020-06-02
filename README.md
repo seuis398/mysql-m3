@@ -8,7 +8,7 @@ MYSQL-M3
 
 ### 요구사항
 - Redhat 계열 Linux (RHEL, CentOS, Oracle Linux)
-- Perl 5.8, Perl 5.10, Perl 5.16 (perl 버전이 다른 경우 하단 설명 참조)
+- Perl 5.8, 5.10, 5.16, 5.26 (Redhat 계열 Linux 5 ~ 8의 기본 Perl 버전, 버전이 다른 경우 하단 설명 참조)
 - 모니터 전용 서버 (권장) 
 
 ### 설치
