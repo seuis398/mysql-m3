@@ -10,6 +10,7 @@ MYSQL-M3
 - Redhat 계열 Linux (RHEL, CentOS, Oracle Linux)
 - Perl 5.8, 5.10, 5.16, 5.26 (Redhat 계열 Linux 5 ~ 8의 기본 Perl 버전, 버전이 다른 경우 하단 설명 참조)
 - 모니터 전용 서버 (권장) 
+- GTID Replication (권장)
 
 ### 설치
 #### 1) 모니터 설치
@@ -44,13 +45,65 @@ GRANT CONNECTION_ADMIN, REPLICATION_SLAVE_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* T
 - Cluster 값은 모니터 데몬의 port로 사용되므로, port range를 고려해서 결정해야 합니다.
 - exclusive 속성의 role(writer) 1개는 필수, balanced 속성의 role (reader)는 옵션입니다. 
 - VIP는 실제 mysql 서버의 IP와 동일 subnet의 IP를 사용합니다.
+- multi source replication을 사용하는 DB 노드는 모니터링 대상 channel 명을 지정해야 합니다.
 
 #### 5) 에이전트 설정
 - 설치경로/conf/mmm_agent.conf 파일을 생성합니다. (mmm_agent_example.conf 참고)
+- multi source replication을 사용하는 DB 노드는 Failover 대상 channel 명을 지정해야 합니다.
 
 ### DB 복제 구성
 - Writer role을 가질 2대의 DB간 양방향 복제 구성 필요합니다.
 - 그 외 DB는 최초 writer role을 할당받을 DB의 slave로 구성합니다.
+
+### 구성 예시
+#### 1) Single Master + N Slave
+:warning: Master 노드와 예비 Master 노드간 양방향 복제를 구성하지만, 항상 Write는 한쪽 노드에서만 발생합니다.
+```
+# Example
+db1 (192.168.56.101/writer + 192.168.56.105/reader) <──> db2 (192.168.56.102/reader)
+ │
+ ┣─> db3 (192.168.56.103/reader)
+ │
+ └─> db4 (192.168.56.104/reader)
+
+# Config
+<role writer>
+  hosts db1, db2
+  ips   192.168.56.101
+  mode  exclusive
+</role>
+
+<role reader>
+  hosts db1, db2, db3, db4
+  ips   192.168.56.102, 192.168.56.103, 192.168.56.104, 192.168.56.105 
+  mode  balanced
+</role>
+```
+
+### 2) Dual Active Master + N Slave
+:warning: Dual Active Master 환경에 Slave 노드가 존재하는 경우 GTID 복제 환경은 필수입니다.
+
+:warning: Writer VIP 별로 접근하는 데이터가 구분되어야 합니다. (예: writer #1 : schema_A 사용, writer #2 : schema_B 사용)
+
+```
+# Example
+db1 (192.168.56.101/writer) <──> db2 (192.168.56.102/writer)
+ │
+ └─> db3 (192.168.56.103/reader)
+
+# Config
+<role writer>
+  hosts db1, db2
+  ips   192.168.56.101, 192.168.56.102
+  mode  balanced
+</role>
+
+<role reader>
+  hosts db1, db2, db3
+  ips   192.168.56.103
+  mode  balanced
+</role>
+```
 
 ### 데몬 구동
 #### 1) 모니터 데몬 구동
