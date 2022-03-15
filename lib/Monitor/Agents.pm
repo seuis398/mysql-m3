@@ -193,6 +193,9 @@ sub get_replication_status($) {
 		if (defined($agent->repl_channel) && $agent->repl_channel ne '') {
 			$channel_option = " FOR CHANNEL '" . $agent->repl_channel . "'";
 			$channel_info = " | Channel_Name: " . $agent->repl_channel;
+		} else {
+			$channel_option = "";
+			$channel_info = "";
 		}
 
 		my $slave_status = $check_dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
