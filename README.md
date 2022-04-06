@@ -109,10 +109,15 @@ db1 (192.168.56.101/writer) <──> db2 (192.168.56.102/writer)
 #### 1) 모니터 데몬 구동
 ```
 $ /etc/init.d/mysql-mmm-monitor start {Cluster}
+or
+$ systemctl start mysql-mmm-monitor@{Cluster}.service
 ```
+
 #### 2) 에이전트 데몬 구동
 ```
 $ /etc/init.d/mysql-mmm-agent start
+or
+$ systemctl start mysql-mmm-agent.service
 ```
 
 ### 클러스터 관리

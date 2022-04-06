@@ -1,0 +1,19 @@
+[Unit]
+Description=MySQL-MMM(mysql-m3) Agent
+After=network.target
+After=syslog.target
+
+[Install]
+WantedBy=multi-user.target
+Alias=mysql-mmm-agent.service
+
+[Service]
+User=root
+Group=root
+Type=forking
+
+ExecStart = %PREFIX%/etc/init.d/mysql-mmm-agent start
+ExecStop = %PREFIX%/etc/init.d/mysql-mmm-agent stop
+
+TimeoutSec=300
+PrivateTmp=true
