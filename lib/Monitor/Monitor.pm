@@ -522,7 +522,7 @@ sub _check_host_states($) {
 			}
 
 			# AWAITING_RECOVERY -> ONLINE (if host was offline for a short period)
-			if ($ping && $mysql && $rep_backlog && $rep_threads) {
+			if ($ping && $mysql && $rep_backlog && $rep_threads && !$agent->agent_down()) {
 				my $state_diff  = time() - $agent->last_state_change;
 
 				if ($agent->flapping) {
