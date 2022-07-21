@@ -8,7 +8,7 @@ MYSQL-M3
 
 ### 요구사항
 - Redhat 계열 Linux (RHEL, CentOS, Oracle Linux)
-- Perl 5.8, 5.10, 5.16, 5.26 (Redhat 계열 Linux 5 ~ 8의 기본 Perl 버전, 버전이 다른 경우 하단 설명 참조)
+- Perl 5.10, 5.16, 5.26 (Redhat 계열 Linux 6 ~ 8의 기본 Perl 버전, 버전이 다른 경우 하단 설명 참조)
 - 모니터 전용 서버 (권장) 
 - GTID Replication (권장)
 
@@ -109,10 +109,15 @@ db1 (192.168.56.101/writer) <──> db2 (192.168.56.102/writer)
 #### 1) 모니터 데몬 구동
 ```
 $ /etc/init.d/mysql-mmm-monitor start {Cluster}
+or
+$ systemctl start mysql-mmm-monitor@{Cluster}.service
 ```
+
 #### 2) 에이전트 데몬 구동
 ```
 $ /etc/init.d/mysql-mmm-agent start
+or
+$ systemctl start mysql-mmm-agent.service
 ```
 
 ### 클러스터 관리

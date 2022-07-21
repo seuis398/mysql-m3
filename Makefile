@@ -38,15 +38,21 @@ install_common:
 
 install_agent: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent
-	cp -r etc/mysql-mmm/mmm_agent.conf $(CONFDIR)/mmm_agent_example.conf
+	cp -f etc/mysql-mmm/mmm_agent.conf $(CONFDIR)/mmm_agent_example.conf
 	chmod 600 $(CONFDIR)/mmm_agent_example.conf
+	cp -f etc/systemd/mysql-mmm-agent.service /usr/lib/systemd/system/
 	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
+	sed -i 's#%PREFIX%#$(PREFIX)#g' /usr/lib/systemd/system/mysql-mmm-agent.service
 	find $(MODULEDIR)/MMM/Agent/Agent.pm -exec vi -c "%s/2.2.1/$(VERSION) (mysql-m3)/g" -c "wq" "{}" \;
+	systemctl daemon-reload
 
 install_monitor: install_common
 	ln -sf $(ETCDIR)/init.d/mysql-mmm-monitor $(INITDIR)/mysql-mmm-monitor
 	cp -r etc/mysql-mmm/mmm_mon.conf $(CONFDIR)/mmm_mon_example.conf
 	chmod 600 $(CONFDIR)/mmm_mon_example.conf
+	cp -f etc/systemd/mysql-mmm-monitor@.service /usr/lib/systemd/system/
 	find $(CONFDIR)/ -type f -name "*mmm*" -exec sed -i 's#%PREFIX%#$(PREFIX)#g' {} \;
+	sed -i 's#%PREFIX%#$(PREFIX)#g' /usr/lib/systemd/system/mysql-mmm-monitor@.service
+	systemctl daemon-reload
 
 install: install_agent install_monitor

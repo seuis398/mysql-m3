@@ -1,0 +1,19 @@
+[Unit]
+Description=MySQL-MMM(mysql-m3) Monitor (cluster : %I)
+After=network.target
+After=syslog.target
+
+[Install]
+WantedBy=multi-user.target
+Alias=mysql-mmm-monitor.service
+
+[Service]
+User=root
+Group=root
+Type=forking
+
+ExecStart = %PREFIX%/etc/init.d/mysql-mmm-monitor start %I
+ExecStop = %PREFIX%/etc/init.d/mysql-mmm-monitor stop %I
+
+TimeoutSec=300
+PrivateTmp=true
