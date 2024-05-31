@@ -317,10 +317,16 @@ CONNECT2: {
 
 	# Check replication peers
 	my $slave_status1 = $dbh1->selectrow_hashref('SHOW SLAVE STATUS' . $master1_channel_option);
+	$slave_status1 = $dbh1->selectrow_hashref("SHOW REPLICA STATUS" . $master1_channel_option) if ($dbh1->err);
 	my $slave_status2 = $dbh2->selectrow_hashref('SHOW SLAVE STATUS' . $master2_channel_option);
+	$slave_status2 = $dbh2->selectrow_hashref("SHOW REPLICA STATUS" . $master2_channel_option) if ($dbh2->err);
 
-	WARN "$master1 is not replicating from $master2" if (!defined($slave_status1) || $slave_status1->{Master_Host} ne $master2_info->{ip});
-	WARN "$master2 is not replicating from $master1" if (!defined($slave_status2) || $slave_status2->{Master_Host} ne $master1_info->{ip});
+	if (!defined($slave_status1) || exists($slave_status1->{Master_Host}) ? $slave_status1->{Master_Host} : $slave_status1->{Source_Host} ne $master2_info->{ip}) {
+		WARN "$master1 is not replicating from $master2";
+	}
+	if (!defined($slave_status2) || exists($slave_status2->{Master_Host}) ? $slave_status2->{Master_Host} : $slave_status2->{Source_Host} ne $master1_info->{ip}) {
+		WARN "$master2 is not replicating from $master1";
+	}
 
 
 	# Check auto_increment_offset and auto_increment_increment

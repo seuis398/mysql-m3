@@ -146,7 +146,8 @@ CONNECT: {
 	$channel_option = " FOR CHANNEL '" . $self->repl_channel . "'" if (defined($self->repl_channel) && $self->repl_channel ne '');
 
 	my $slave_status = $dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
-	$master_ip = $slave_status->{Master_Host} if (defined($slave_status));
+	$slave_status = $dbh->selectrow_hashref("SHOW REPLICA STATUS" . $channel_option) if ($dbh->err);
+	$master_ip = exists($slave_status->{Master_Host}) ? $slave_status->{Master_Host} : $slave_status->{Source_Host} if (defined($slave_status));
 
 	my @roles;
 	foreach my $role (keys(%{$main::config->{role}})) {

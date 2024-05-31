@@ -198,17 +198,31 @@ sub get_replication_status($) {
 			$channel_info = "";
 		}
 
-		my $slave_status = $check_dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
-		if (defined($slave_status)) {
-			my $ss_master = $slave_status->{Master_Host};
-			my $ss_repl_thread = join('/', $slave_status->{Slave_IO_Running}, $slave_status->{Slave_SQL_Running});
+		my %key_map = (
+			'Master_Host' => 'Source_Host',
+			'Slave_IO_Running' => 'Replica_IO_Running',
+			'Slave_SQL_Running' => 'Replica_SQL_Running',
+			'Seconds_Behind_Master' => 'Seconds_Behind_Source'
+		);
 
+		my $slave_status = $check_dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
+		$slave_status = $check_dbh->selectrow_hashref("SHOW REPLICA STATUS" . $channel_option) if ($check_dbh->err);
+
+		if (defined($slave_status)) {
+			my %new_slave_status;
+			while (my ($old_key, $value) = each %$slave_status) {
+				my $new_key = $key_map{$old_key} // $old_key;
+				$new_slave_status{$new_key} = $value;
+			}
+
+			my $ss_master = $new_slave_status{Source_Host};
+			my $ss_repl_thread = join('/', $new_slave_status{Replica_IO_Running}, $new_slave_status{Replica_SQL_Running});
 			my $ss_sbm = '-';
-			$ss_sbm = $slave_status->{Seconds_Behind_Master}  if ($slave_status->{Slave_IO_Running} eq "Yes" && $slave_status->{Slave_SQL_Running} eq "Yes");
+			$ss_sbm = $new_slave_status{Seconds_Behind_Source} if ($new_slave_status{Replica_IO_Running} eq "Yes" && $new_slave_status{Replica_SQL_Running} eq "Yes");
 
 			my $read_only_status = $check_dbh->selectrow_hashref("SHOW GLOBAL VARIABLES LIKE 'read_only'"); 
 
-			$res .= sprintf("  %s [Master: %s | Replication_Thread: %s | Seconds_Behind_Master: %s | Read_Only: %-3s%s]\n"
+			$res .= sprintf("  %s [Source: %s | Replication_Thread: %s | Seconds_Behind_Source: %s | Read_Only: %-3s%s]\n"
 					,$agent->host, $ss_master, $ss_repl_thread, $ss_sbm, $read_only_status->{Value}, $channel_info);
 		}
 		$check_dbh->disconnect;

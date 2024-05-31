@@ -251,37 +251,56 @@ sub sync_with_master() {
 	my $old_wait_pos = '';
 	my $chk_wait_pos = '';
 	my $slave_status = '';
+	my $new_slave_status = '';
 	my $last_sql_time = '';
 	my $last_sql_error_pos = '';
 	my $channel_option = '';
+	my $command_show_replica = '';
+	my $command_start_replica = '';
+	my $command_stop_replica = '';
 
 	my $repl_channel = _get_replication_channel($this);
 
 	# if this node has multiple replication channels, add channel option to command
 	$channel_option = " FOR CHANNEL '" . $repl_channel . "'" if (defined($repl_channel) && $repl_channel ne "");
 
+	# replication command
+	$this_dbh->selectrow_hashref("SHOW SLAVE STATUS");
+	if ($this_dbh->err) {
+		$command_show_replica  = "SHOW REPLICA STATUS";
+		$command_start_replica = "START REPLICA ";
+		$command_stop_replica  = "STOP REPLICA ";
+	}
+	else {
+		$command_show_replica  = "SHOW SLAVE STATUS";
+		$command_start_replica = "START SLAVE ";
+		$command_stop_replica  = "STOP SLAVE ";
+	}
+
 	# Determine wait log and wait pos
 	do
 	{
 		usleep(500 * 1000);
 
-		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS' . $channel_option);
+		$slave_status = $this_dbh->selectrow_hashref($command_show_replica . $channel_option);
 		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
-	} while ($slave_status->{Master_Log_File} ne $slave_status->{Relay_Master_Log_File} 
-		or
-		$slave_status->{Read_Master_Log_Pos} - $slave_status->{Exec_Master_Log_Pos} > 1024 * 1024);
+
+		$new_slave_status = _slave_status_key_rename($slave_status);
+	} while ($new_slave_status->{Source_Log_File} ne $new_slave_status->{Relay_Source_Log_File}
+			or $new_slave_status->{Read_Source_Log_Pos} - $new_slave_status->{Exec_Source_Log_Pos} > 1024 * 1024);
 
 	sleep(2);
-	$this_dbh->do('STOP SLAVE IO_THREAD' . $channel_option);
+	$this_dbh->do($command_stop_replica . 'IO_THREAD' . $channel_option);
 
 	# Sync with the relay log.
 	do
 	{
-		$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS' . $channel_option);
+		$slave_status = $this_dbh->selectrow_hashref($command_show_replica . $channel_option);
 		_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
 
-		$wait_pos	= join(":", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
-		$chk_wait_pos	= join(":", $slave_status->{Relay_Master_Log_File}, $slave_status->{Exec_Master_Log_Pos});
+		$new_slave_status = _slave_status_key_rename($slave_status);
+		$wait_pos = join(":", $new_slave_status->{Source_Log_File}, $new_slave_status->{Read_Source_Log_Pos});
+		$chk_wait_pos = join(":", $new_slave_status->{Relay_Source_Log_File}, $new_slave_status->{Exec_Source_Log_Pos});
 
 		if ($chk_wait_pos ne $old_wait_pos) {
 			$last_sql_time = time()
@@ -291,14 +310,14 @@ sub sync_with_master() {
 			$chk_wait_pos = $wait_pos;
 		}
 
-		if ($slave_status->{Slave_SQL_Running} eq 'No') {
+		if ($new_slave_status->{Replica_SQL_Running} eq 'No') {
 			if($chk_wait_pos eq $last_sql_error_pos) {
-				$this_dbh->do('START SLAVE IO_THREAD' . $channel_option);
+				$this_dbh->do($command_start_replica . 'IO_THREAD' . $channel_option);
 				_exit_error('SQL Thread Error !!');
 			}
 
 			# re-try
-			$this_dbh->do('START SLAVE SQL_THREAD' . $channel_option);
+			$this_dbh->do($command_start_replica . 'SQL_THREAD' . $channel_option);
 			$last_sql_error_pos = $chk_wait_pos;
 		}
 
@@ -306,7 +325,7 @@ sub sync_with_master() {
 		usleep(200 * 1000);
 	} while ($wait_pos ne $chk_wait_pos) ;
 
-	$this_dbh->do('START SLAVE IO_THREAD' . $channel_option);
+	$this_dbh->do($command_start_replica . 'IO_THREAD' . $channel_option);
 	$this_dbh->disconnect;
 
 	_exit_ok('');
@@ -324,6 +343,9 @@ sub set_active_master($) {
 	_exit_error('Name of new master is missing') unless (defined($new_peer));
 
 	my $this = _get_this();
+	my $command_show_replica = '';
+	my $command_start_replica = '';
+	my $command_stop_replica = '';
 
 	_exit_error('New master is equal to local host!?') if ($this eq $new_peer);
 
@@ -346,23 +368,35 @@ sub set_active_master($) {
 	my $repl_channel = _get_replication_channel($this);
 
 	# Change master command
-	my $sql = "CHANGE MASTER TO MASTER_HOST='$new_peer_host', MASTER_PORT=$new_peer_port,"
-		. " MASTER_USER='$repl_user', MASTER_PASSWORD='$repl_password', ";
+	my $sql = "CHANGE REPLICATION SOURCE TO SOURCE_HOST='$new_peer_host', SOURCE_PORT=$new_peer_port,"
+		. " SOURCE_USER='$repl_user', SOURCE_PASSWORD='$repl_password', ";
 	my $channel_option = "";
 	my $log_msg = "";
 
 	# if this node has multiple replication channels, add channel option to command
 	$channel_option = " FOR CHANNEL '" . $repl_channel . "'" if (defined($repl_channel) && $repl_channel ne "");
 
+	# replication command
+	$this_dbh->selectrow_hashref("SHOW SLAVE STATUS");
+	if ($this_dbh->err) {
+		$command_show_replica  = "SHOW REPLICA STATUS";
+		$command_start_replica = "START REPLICA ";
+		$command_stop_replica  = "STOP REPLICA ";
+	}
+	else {
+		$command_show_replica  = "SHOW SLAVE STATUS";
+		$command_start_replica = "START SLAVE ";
+		$command_stop_replica  = "STOP SLAVE ";
+	}
 
 	# if this host is a slave of the new master, exit !! (nothing to do)
-	my $slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS' . $channel_option);
+	my $slave_status = $this_dbh->selectrow_hashref($command_show_replica . $channel_option);
 	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
 
-	my $old_peer_ip = $slave_status->{Master_Host};
+	my $old_peer_ip = exists($slave_status->{Master_Host}) ? $slave_status->{Master_Host} : $slave_status->{Source_Host};
 	_exit_error('No ip for old peer') unless ($old_peer_ip);
 	my $old_peer = _find_host_by_ip($old_peer_ip);
-	_exit_error('Invalid master host in show slave status') unless ($old_peer);
+	_exit_error('Invalid master host in show replica status') unless ($old_peer);
 
 	_exit_ok('We are already a slave of the new master') if ($old_peer eq $new_peer);
 	
@@ -373,7 +407,7 @@ sub set_active_master($) {
 	
 	if ( substr($gtid_mode, 0, 2) eq "ON" ) {
 		# Change master command (GTID)
-		$sql = $sql . "MASTER_AUTO_POSITION=1";
+		$sql = $sql . "SOURCE_AUTO_POSITION=1";
 		$log_msg = "starting replication (gtid auto-position)";
 	}
 	else {
@@ -384,6 +418,7 @@ sub set_active_master($) {
 
 		# Get log position of new master
 		my $new_master_status = $new_peer_dbh->selectrow_hashref('SHOW MASTER STATUS');
+		$new_master_status = $new_peer_dbh->selectrow_hashref('SHOW BINARY LOG STATUS') if ($new_peer_dbh->err);
 		_exit_error('SQL Query Error: ' . $new_peer_dbh->errstr) unless($new_master_status);
 
 		my $master_log = $new_master_status->{File};
@@ -392,7 +427,7 @@ sub set_active_master($) {
 		$new_peer_dbh->disconnect;
 
 		# Change master command (non-GTID)
-		$sql = $sql . "MASTER_LOG_FILE='$master_log', MASTER_LOG_POS=$master_pos";
+		$sql = $sql . "SOURCE_LOG_FILE='$master_log', SOURCE_LOG_POS=$master_pos";
 
 		$log_msg = "starting replication in log '" . $master_log . "' at position " . $master_pos;
 	}
@@ -408,20 +443,23 @@ sub set_active_master($) {
 	if ( substr($gtid_mode, 0, 2) ne "ON" ) {
 		my $wait_pos = '';
 		my $old_wait_pos = '';
+		my $new_slave_status = '';
 			
 		# Determine wait log and wait pos
 		do
 		{
 			$old_wait_pos = $wait_pos;
 
-			$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS' . $channel_option);
+			$slave_status = $this_dbh->selectrow_hashref($command_show_replica . $channel_option);
 			_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
 
-			$wait_pos = join(":", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
+			$new_slave_status = _slave_status_key_rename($slave_status);
+
+			$wait_pos = join(":", $new_slave_status->{Source_Log_File}, $new_slave_status->{Read_Source_Log_Pos});
 			usleep(500 * 1000);
 		} while ($old_wait_pos ne $wait_pos);
 
-		$this_dbh->do('STOP SLAVE IO_THREAD' . $channel_option);
+		$this_dbh->do($command_stop_replica . 'IO_THREAD' . $channel_option);
 
 		my $chk_wait_pos = '';
 		my $sql_thread_status = '';
@@ -432,12 +470,14 @@ sub set_active_master($) {
 		# Sync with the relay log.
 		do
 		{
-			$slave_status = $this_dbh->selectrow_hashref('SHOW SLAVE STATUS' . $channel_option);
+			$slave_status = $this_dbh->selectrow_hashref($command_show_replica . $channel_option);
 			_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless defined($slave_status);
 
-			$sql_thread_status  = $slave_status->{Slave_SQL_Running};
-			$wait_pos = join(":", $slave_status->{Master_Log_File}, $slave_status->{Read_Master_Log_Pos});
-			$chk_wait_pos = join(":",  $slave_status->{Relay_Master_Log_File}, $slave_status->{Exec_Master_Log_Pos});
+			$new_slave_status = _slave_status_key_rename($slave_status);
+
+			$sql_thread_status  = $new_slave_status->{Replica_SQL_Running};
+			$wait_pos = join(":", $new_slave_status->{Source_Log_File}, $new_slave_status->{Read_Source_Log_Pos});
+			$chk_wait_pos = join(":",  $new_slave_status->{Relay_Source_Log_File}, $new_slave_status->{Exec_Source_Log_Pos});
 
 			if ($chk_wait_pos ne $old_wait_pos) {
 				$last_sql_time = time()
@@ -447,14 +487,14 @@ sub set_active_master($) {
 				$chk_wait_pos = $wait_pos;
 			}
 
-			if ($slave_status->{Slave_SQL_Running} eq 'No') {
+			if ($new_slave_status->{Replica_SQL_Running} eq 'No') {
 				if($chk_wait_pos eq $last_sql_error_pos) {
-					$this_dbh->do('START SLAVE IO_THREAD' . $channel_option);
+					$this_dbh->do($command_start_replica . 'IO_THREAD' . $channel_option);
 					_exit_error('SQL Thread Error !!');
 				}
 
 				# re-try
-				$this_dbh->do('START SLAVE SQL_THREAD' . $channel_option);
+				$this_dbh->do($command_start_replica . 'SQL_THREAD' . $channel_option);
 				$last_sql_error_pos = $chk_wait_pos;
 			}
 
@@ -464,15 +504,29 @@ sub set_active_master($) {
 	}
 
 	# Stop slave
-	my $res = $this_dbh->do('STOP SLAVE' . $channel_option);
+	my $res = $this_dbh->do($command_stop_replica . $channel_option);
 	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
 
 	# Change master
+	if ($command_show_replica eq 'SHOW SLAVE STATUS') {
+		my %replacements = (
+			'CHANGE REPLICATION SOURCE' => 'CHANGE MASTER',
+			'SOURCE_HOST' => 'MASTER_HOST',
+			'SOURCE_PORT' => 'MASTER_PORT',
+			'SOURCE_USER' => 'MASTER_USER',
+			'SOURCE_PASSWORD' => 'MASTER_PASSWORD',
+			'SOURCE_LOG_FILE' => 'MASTER_LOG_FILE',
+			'SOURCE_LOG_POS' => 'MASTER_LOG_POS',
+			'SOURCE_AUTO_POSITION' => 'MASTER_AUTO_POSITION'
+		);
+		my $pattern = join('|', map { quotemeta } keys %replacements);
+		$sql =~ s/($pattern)/$replacements{$1}/g;
+	}
 	$res = $this_dbh->do($sql);
 	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
 
 	# Start slave
-	$res = $this_dbh->do('START SLAVE' . $channel_option);
+	$res = $this_dbh->do($command_start_replica . $channel_option);
 	_exit_error('SQL Query Error: ' . $this_dbh->errstr) unless($res);
 
 	$this_dbh->disconnect;
@@ -576,6 +630,28 @@ sub _verbose_exit($$) {
 
 	print $msg, "\n";
 	exit($ret);
+}
+
+sub _slave_status_key_rename {
+	my ($row) = @_;
+	my %key_map = (
+		'Master_Host' => 'Source_Host',
+		'Master_Log_File' => 'Source_Log_File',
+		'Relay_Master_Log_File' => 'Relay_Source_Log_File',
+		'Read_Master_Log_Pos' => 'Read_Source_Log_Pos',
+		'Exec_Master_Log_Pos' => 'Exec_Source_Log_Pos',
+		'Slave_IO_Running' => 'Replica_IO_Running',
+		'Slave_SQL_Running' => 'Replica_SQL_Running',
+		'Seconds_Behind_Master' => 'Seconds_Behind_Source'
+	);
+
+	my %new_row;
+	while (my ($old_key, $value) = each %$row) {
+		my $new_key = $key_map{$old_key} // $old_key;
+		$new_row{$new_key} = $value;
+	}
+
+	return \%new_row;
 }
 
 1;

@@ -191,6 +191,12 @@ sub rep_backlog($$) {
 		my $res = $sth->execute;
 
 		if ($dbh->err) {
+			$sth->finish();
+			$sth = $dbh->prepare('SHOW REPLICA STATUS' . $channel_option);
+			$res = $sth->execute;
+		}
+
+		if ($dbh->err) {
 			alarm(1);
 			my $ret = 'UNKNOWN: Unknown state. Execute error: ' . $dbh->errstr;
 			$ret = "ERROR: The monitor user '$peer_user' doesn't have the required REPLICATION CLIENT privilege! " . $dbh->errstr if ($dbh->err == 1227);
@@ -221,7 +227,7 @@ sub rep_backlog($$) {
 
 	
 		# Check backlog size
-		my $backlog = $status->{Seconds_Behind_Master};
+		my $backlog = exists($status->{Seconds_Behind_Master}) ? $status->{Seconds_Behind_Master} : $status->{Seconds_Behind_Source};
 		$backlog = 0 unless ($backlog);
 
 		return 'OK: Backlog is null' if ($backlog == 0);
@@ -278,6 +284,12 @@ sub rep_threads($$) {
 		my $res = $sth->execute;
 
 		if ($dbh->err) {
+			$sth->finish();
+			$sth = $dbh->prepare('SHOW REPLICA STATUS' . $channel_option);
+			$res = $sth->execute;
+		}
+
+		if ($dbh->err) {
 			alarm(1);
 			my $ret = 'UNKNOWN: Unknown state. Execute error: ' . $dbh->errstr;
 			$ret = "ERROR: The monitor user '$peer_user' doesn't have the required REPLICATION CLIENT privilege! " . $dbh->errstr if ($dbh->err == 1227);
@@ -308,7 +320,9 @@ sub rep_threads($$) {
 		return 'ERROR: Replication is not set up' unless defined($status);
 
 		# Check peer replication state
-		if ($status->{Slave_IO_Running} eq 'No' || $status->{Slave_SQL_Running} eq 'No') {
+		my $io_running  = exists($status->{Slave_IO_Running}) ? $status->{Slave_IO_Running} : $status->{Replica_IO_Running};
+		my $sql_running = exists($status->{Slave_SQL_Running}) ? $status->{Slave_SQL_Running} : $status->{Replica_SQL_Running};
+		if ($io_running eq 'No' || $sql_running eq 'No') {
 			return 'ERROR: Replication is broken';
 		}
 		return 0;
