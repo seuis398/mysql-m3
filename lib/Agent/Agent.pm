@@ -138,6 +138,7 @@ CONNECT: {
     unless ($dbh) {
         redo CONNECT if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
         WARN "Couldn't connect to mysql. Can't determine current master host." . $DBI::err . " " . $DBI::errstr;
+        return "ERROR: Couldn't connect to mysql.";
     }
 }
 
