@@ -134,7 +134,7 @@ sub cmd_get_system_status($) {
 	my $dbh;
 CONNECT: {
 	DEBUG "Connecting to mysql";
-	$dbh = DBI->connect($dsn, $self->mysql_user, $self->mysql_password, { PrintError => 0 });
+	$dbh = DBI->connect($dsn, $self->mysql_user, $self->mysql_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 	unless ($dbh) {
 		redo CONNECT if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
 		WARN "Couldn't connect to mysql. Can't determine current master host." . $DBI::err . " " . $DBI::errstr;

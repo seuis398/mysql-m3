@@ -322,7 +322,7 @@ sub load_status($) {
 sub _mysql_connect($$$$) {
 	my ($host, $port, $user, $password) = @_;
 	my $dsn = "DBI:mysql:host=$host;port=$port;mysql_connect_timeout=3";
-	return DBI->connect($dsn, $user, $password, { PrintError => 0 });
+	return DBI->connect($dsn, $user, $password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 }
 
 1;

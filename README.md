@@ -7,7 +7,7 @@ MYSQL-M3
 - mysql-mmm 프로젝트는 2009년 이후 업데이트되고 있지 않으며, mysql-m3는 mysql-mmm의 기능 개선, 버그 패치 등을 포함하고 있습니다.
 
 ### 요구사항
-- Redhat 계열 Linux (RHEL, CentOS, Oracle Linux)
+- Redhat 계열 Linux (RHEL, Rocky Linux, CentOS, Oracle Linux)
 - Perl 5.10, 5.16, 5.26 (Redhat 계열 Linux 6 ~ 8의 기본 Perl 버전, 버전이 다른 경우 하단 설명 참조)
 - 모니터 전용 서버 (권장) 
 - GTID Replication (권장)
@@ -28,6 +28,7 @@ $ make install_agent PREFIX=/path/you/want
 
 #### 3) MMM 접속 DB 계정 생성
 - 모니터 서버와 각 에이전트(mysql 서버)의 IP로 모두 접속이 가능해야 합니다. 
+- caching_sha2_password 방식의 인증을 사용하는 경우, RSA private/public key-pair가 필요합니다. (caching_sha2_password_auto_generate_rsa_keys=on)
 - MySQL 5.7 이하
 ```
 CREATE USER {MMM_USER}@{접속IP} IDENTIFIED BY 'xxxx';
@@ -35,7 +36,7 @@ GRANT PROCESS, SUPER, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
 ```
 - MySQL 8.0 이상 
 ```
-CREATE USER {MMM_USER}@{접속IP} IDENTIFIED WITH mysql_native_password BY 'xxxx';
+CREATE USER {MMM_USER}@{접속IP} IDENTIFIED BY 'xxxx';
 GRANT PROCESS, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO {MMM_USER}@{접속IP};
 GRANT CONNECTION_ADMIN, REPLICATION_SLAVE_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO {MMM_USER}@{접속IP};
 ```

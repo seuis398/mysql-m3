@@ -114,7 +114,7 @@ sub mysql($$) {
 		
 		# connect to server
 		my $dsn = "DBI:mysql:host=$peer_host;port=$peer_port;mysql_connect_timeout=$timeout";
-		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0 });
+		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 		
 		unless ($dbh) {
 			alarm(0);
@@ -180,7 +180,7 @@ sub rep_backlog($$) {
 	
 		# connect to server
 		my $dsn = "DBI:mysql:host=$peer_host;port=$peer_port;mysql_connect_timeout=$timeout";
-		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0 });
+		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 		unless ($dbh) {
 			alarm(0);
 			return "UNKNOWN: Connect error (host = $peer_host:$peer_port, user = $peer_user)! " . $DBI::errstr;
@@ -270,7 +270,7 @@ sub rep_threads($$) {
 	
 		# connect to server
 		my $dsn = "DBI:mysql:host=$peer_host;port=$peer_port;mysql_connect_timeout=$timeout";
-		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0 });
+		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 		return "UNKNOWN: Connect error (host = $peer_host:$peer_port, user = $peer_user)! " . $DBI::errstr unless ($dbh);
 	
 		# Check server (replication backlog)

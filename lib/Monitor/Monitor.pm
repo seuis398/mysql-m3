@@ -287,7 +287,7 @@ sub check_master_configuration($) {
 	my $dbh1;
 CONNECT1: {
 	DEBUG "Connecting to master 1";
-	$dbh1	= DBI->connect($dsn1, $master1_info->{monitor_user}, $master1_info->{monitor_password}, { PrintError => 0 });
+	$dbh1	= DBI->connect($dsn1, $master1_info->{monitor_user}, $master1_info->{monitor_password}, { PrintError => 0, mysql_get_server_pubkey => 1 });
 	unless ($dbh1) {
 		redo CONNECT1 if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
 		WARN "Couldn't connect to  '$master1'. Skipping check of master-master replication." . $DBI::err . " " . $DBI::errstr;
@@ -297,7 +297,7 @@ CONNECT1: {
 	my $dbh2;
 CONNECT2: {
 	DEBUG "Connecting to master 2";
-	$dbh2	= DBI->connect($dsn2, $master2_info->{monitor_user}, $master2_info->{monitor_password}, { PrintError => 0 });
+	$dbh2	= DBI->connect($dsn2, $master2_info->{monitor_user}, $master2_info->{monitor_password}, { PrintError => 0, mysql_get_server_pubkey => 1 });
 	unless ($dbh2) {
 		redo CONNECT2 if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
 		WARN "Couldn't connect to  '$master2'. Skipping check of master-master replication." . $DBI::err . " " . $DBI::errstr;
