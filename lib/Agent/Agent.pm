@@ -38,6 +38,7 @@ struct 'MMM::Agent::Agent' => {
 	mysql_password		=> '$',
 	writer_role			=> '$',
 	bin_path			=> '$',
+	repl_channel		=> '$',
 
 	active_master		=> '$',
 	state				=> '$',
@@ -140,7 +141,10 @@ CONNECT: {
     }
 }
 
-    my $slave_status = $dbh->selectrow_hashref('SHOW SLAVE STATUS');
+	my $channel_option = "";
+	$channel_option = " FOR CHANNEL '" . $self->repl_channel . "'" if (defined($self->repl_channel) && $self->repl_channel ne '');
+
+	my $slave_status = $dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
 	$master_ip = $slave_status->{Master_Host} if (defined($slave_status));
 
 	my @roles;
@@ -302,6 +306,7 @@ sub from_config($%) {
 	$self->mysql_password	($host->{agent_password});
 	$self->writer_role		($config->{active_master_role});
 	$self->bin_path			($host->{bin_path});
+	$self->repl_channel		($host->{replication_channel});
 }
 
 1;

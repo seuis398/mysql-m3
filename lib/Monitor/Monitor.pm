@@ -305,15 +305,15 @@ CONNECT2: {
 }
 
 	my $master1_channel_option = "";
-	if (defined($master1_info->{rep_channel}) && $master1_info->{rep_channel} ne '') {
-		$master1_channel_option = " FOR CHANNEL '" . $master1_info->{rep_channel} . "'";
+	if (defined($master1_info->{replication_channel}) && $master1_info->{replication_channel} ne '') {
+		$master1_channel_option = " FOR CHANNEL '" . $master1_info->{replication_channel} . "'";
 	}
 
 	my $master2_channel_option = "";
-	if (defined($master2_info->{rep_channel}) && $master2_info->{rep_channel} ne '') {
-		$master2_channel_option = " FOR CHANNEL '" . $master2_info->{rep_channel} . "'";
+	if (defined($master2_info->{replication_channel}) && $master2_info->{replication_channel} ne '') {
+		$master2_channel_option = " FOR CHANNEL '" . $master2_info->{replication_channel} . "'";
 	}
-	
+
 
 	# Check replication peers
 	my $slave_status1 = $dbh1->selectrow_hashref('SHOW SLAVE STATUS' . $master1_channel_option);
