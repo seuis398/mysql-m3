@@ -230,31 +230,6 @@ sub kill_sql() {
 }
 
 
-=item toggle_slave($state)
-
-Toggle slave state. Starts slave if $state != 0. Stops it otherwise.
-
-=cut
-
-sub toggle_slave($) {
-	my $state = shift;
-
-	my ($host, $port, $user, $password)	= _get_connection_info();
-	_exit_error('No connection info') unless defined($host);
-
-	my $query = $state ? 'START SLAVE' : 'STOP SLAVE';
-
-	# connect to server
-	my $dbh = _mysql_connect($host, $port, $user, $password);
-	_exit_error("Can't connect to MySQL (host = $host:$port, user = $user)! " . $DBI::errstr) unless ($dbh);
-	
-	# execute query
-	my $res = $dbh->do($query);
-	_exit_error('SQL Query Error: ' . $dbh->errstr) unless($res);
-	_exit_ok();
-}
-
-
 =item sync_with_master( )
 
 Try to sync up a (soon active) master with his peer (old active master) when the I<active_master_role> is moved. 
