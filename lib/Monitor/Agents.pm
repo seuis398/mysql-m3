@@ -157,7 +157,7 @@ sub get_status_info($) {
 			unshift @arr_role, sprintf("%s/Ping_%s", $check_roles, $ping_check);
 		}
 
-                $res .= sprintf("  %s(%s) %s/%s. Roles: %s\n", $host, join(':', $agent->ip, $agent->mysql_port), $agent->mode, $agent->state, join(', ', sort(@arr_role)));
+		$res .= sprintf("  %s(%s) %s/%s. Roles: %s\n", $host, join(':', $agent->ip, $agent->mysql_port), $agent->mode, $agent->state, join(', ', sort(@arr_role)));
 	}
 	
 	$p->close();

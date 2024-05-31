@@ -8,8 +8,8 @@ use MMM::Agent::Helpers::Network;
 our $VERSION = '0.01';
 
 if ($OSNAME eq 'linux' || $OSNAME eq 'freebsd') {
-        # these libs will always be loaded, use require and then import to avoid that
-        use Time::HiRes qw( usleep );
+	# these libs will always be loaded, use require and then import to avoid that
+	use Time::HiRes qw( usleep );
 }
 
 =head1 NAME
@@ -218,7 +218,7 @@ sub kill_sql() {
 			) {
 				$retry = 1;
 				next;
-	        }
+			}
 
 			# Kill process
 			$dbh->do("KILL $id");
@@ -257,7 +257,7 @@ sub sync_with_master() {
 
 	my $repl_channel = _get_replication_channel($this);
 
-	# if this node has multiple replication channels, add channel option to command        
+	# if this node has multiple replication channels, add channel option to command
 	$channel_option = " FOR CHANNEL '" . $repl_channel . "'" if (defined($repl_channel) && $repl_channel ne "");
 
 	# Determine wait log and wait pos

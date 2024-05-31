@@ -142,7 +142,7 @@ sub determine_status() {
 
 	my $conflict = 0;
 
-    foreach my $host (keys(%{$main::config->{host}})) {
+	foreach my $host (keys(%{$main::config->{host}})) {
 
 		# Figure out host state
 
@@ -163,7 +163,7 @@ sub determine_status() {
 		$self->{result}->{$host} = { state => $state, roles => [] };
 	}
 
-    foreach my $role_str (keys(%{$self->{roles}})) {
+	foreach my $role_str (keys(%{$self->{roles}})) {
 		my $role = MMM::Monitor::Role->from_string($role_str);
 		next unless(defined($role));
 
@@ -261,11 +261,11 @@ sub to_string($) {
 	my $ret = "Startup status:\n";
 	$ret .= "\nRoles:\n";
 
-    my $role_len = 4; # "Role"
-    my $host_len = 6; # "Master"
+	my $role_len = 4; # "Role"
+	my $host_len = 6; # "Master"
 
-    foreach my $role (keys(%{$main::config->{role}})) { $role_len = max($role_len, length $role) }
-    foreach my $host (keys(%{$main::config->{host}})) { $host_len = max($host_len, length $host) }
+	foreach my $role (keys(%{$main::config->{role}})) { $role_len = max($role_len, length $role) }
+	foreach my $host (keys(%{$main::config->{host}})) { $host_len = max($host_len, length $host) }
 	$role_len += 17; # "(999.999.999.999)"
 
 	$ret .= sprintf("    %-*s  %-*s  %-6s  %-6s  %-5s\n", $role_len, 'Role', $host_len, 'Host', 'Stored', 'System', 'Agent');

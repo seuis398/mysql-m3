@@ -167,7 +167,7 @@ sub cmd_get_agent_status($) {
 	return $self->_send_command_retry($retries, 'GET_AGENT_STATUS');
 }
 
-sub cmd_get_agent_version($) {                                                                                                               
+sub cmd_get_agent_version($) {
 	my $self	= shift;
 	my $retries	= shift || 0;
 	return $self->_send_command_retry($retries, 'GET_AGENT_VERSION');

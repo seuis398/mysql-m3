@@ -14,9 +14,9 @@ use MMM::Agent::Helpers;
 use MMM::Agent::Role;
 
 eval {
-    no warnings 'once';
-    require Unix::Uptime;
-    *uptime = *Unix::Uptime->uptime;
+	no warnings 'once';
+	require Unix::Uptime;
+	*uptime = *Unix::Uptime->uptime;
 };
 if ($EVAL_ERROR) {
 	require MMM::Common::Uptime;
@@ -127,19 +127,19 @@ sub cmd_get_system_status($) {
 	my $self	= shift;
 
 	# determine master info
-    my $dsn			= sprintf("DBI:mysql:host=%s;port=%s;mysql_connect_timeout=3", $self->ip, $self->mysql_port);
-    my $eintr		= EINTR;
+	my $dsn			= sprintf("DBI:mysql:host=%s;port=%s;mysql_connect_timeout=3", $self->ip, $self->mysql_port);
+	my $eintr		= EINTR;
 	my $master_ip	= '';
 
-    my $dbh;
+	my $dbh;
 CONNECT: {
-    DEBUG "Connecting to mysql";
-    $dbh   = DBI->connect($dsn, $self->mysql_user, $self->mysql_password, { PrintError => 0 });
-    unless ($dbh) {
-        redo CONNECT if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
-        WARN "Couldn't connect to mysql. Can't determine current master host." . $DBI::err . " " . $DBI::errstr;
-        return "ERROR: Couldn't connect to mysql.";
-    }
+	DEBUG "Connecting to mysql";
+	$dbh = DBI->connect($dsn, $self->mysql_user, $self->mysql_password, { PrintError => 0 });
+	unless ($dbh) {
+		redo CONNECT if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
+		WARN "Couldn't connect to mysql. Can't determine current master host." . $DBI::err . " " . $DBI::errstr;
+		return "ERROR: Couldn't connect to mysql.";
+	}
 }
 
 	my $channel_option = "";
