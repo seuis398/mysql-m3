@@ -164,12 +164,12 @@ sub send_arp($$) {
 }
 
 sub _exit_error {
-    my $msg = shift;
+	my $msg = shift;
 
-    print "ERROR: $msg\n"   if ($msg);
-    print "ERROR\n"         unless ($msg);
+	print "ERROR: $msg\n"   if ($msg);
+	print "ERROR\n"         unless ($msg);
 
-    exit(255);
+	exit(255);
 }
 
 #-------------------------------------------------------------------------------

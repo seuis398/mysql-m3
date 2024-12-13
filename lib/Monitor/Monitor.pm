@@ -206,7 +206,7 @@ sub init($) {
 
 			my $master = '';
 			if (defined($master_ip)) {
-			    foreach my $a_host (keys(%{$main::config->{host}})) {
+				foreach my $a_host (keys(%{$main::config->{host}})) {
 					$master = $a_host if ($main::config->{host}->{$a_host}->{ip} eq $master_ip);
 				}
 			}
@@ -287,7 +287,7 @@ sub check_master_configuration($) {
 	my $dbh1;
 CONNECT1: {
 	DEBUG "Connecting to master 1";
-	$dbh1	= DBI->connect($dsn1, $master1_info->{monitor_user}, $master1_info->{monitor_password}, { PrintError => 0 });
+	$dbh1	= DBI->connect($dsn1, $master1_info->{monitor_user}, $master1_info->{monitor_password}, { PrintError => 0, mysql_get_server_pubkey => 1 });
 	unless ($dbh1) {
 		redo CONNECT1 if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
 		WARN "Couldn't connect to  '$master1'. Skipping check of master-master replication." . $DBI::err . " " . $DBI::errstr;
@@ -297,7 +297,7 @@ CONNECT1: {
 	my $dbh2;
 CONNECT2: {
 	DEBUG "Connecting to master 2";
-	$dbh2	= DBI->connect($dsn2, $master2_info->{monitor_user}, $master2_info->{monitor_password}, { PrintError => 0 });
+	$dbh2	= DBI->connect($dsn2, $master2_info->{monitor_user}, $master2_info->{monitor_password}, { PrintError => 0, mysql_get_server_pubkey => 1 });
 	unless ($dbh2) {
 		redo CONNECT2 if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
 		WARN "Couldn't connect to  '$master2'. Skipping check of master-master replication." . $DBI::err . " " . $DBI::errstr;
@@ -305,22 +305,28 @@ CONNECT2: {
 }
 
 	my $master1_channel_option = "";
-	if (defined($master1_info->{rep_channel}) && $master1_info->{rep_channel} ne '') {
-		$master1_channel_option = " FOR CHANNEL '" . $master1_info->{rep_channel} . "'";
+	if (defined($master1_info->{replication_channel}) && $master1_info->{replication_channel} ne '') {
+		$master1_channel_option = " FOR CHANNEL '" . $master1_info->{replication_channel} . "'";
 	}
 
 	my $master2_channel_option = "";
-	if (defined($master2_info->{rep_channel}) && $master2_info->{rep_channel} ne '') {
-		$master2_channel_option = " FOR CHANNEL '" . $master2_info->{rep_channel} . "'";
+	if (defined($master2_info->{replication_channel}) && $master2_info->{replication_channel} ne '') {
+		$master2_channel_option = " FOR CHANNEL '" . $master2_info->{replication_channel} . "'";
 	}
-	
+
 
 	# Check replication peers
 	my $slave_status1 = $dbh1->selectrow_hashref('SHOW SLAVE STATUS' . $master1_channel_option);
+	$slave_status1 = $dbh1->selectrow_hashref("SHOW REPLICA STATUS" . $master1_channel_option) if ($dbh1->err);
 	my $slave_status2 = $dbh2->selectrow_hashref('SHOW SLAVE STATUS' . $master2_channel_option);
+	$slave_status2 = $dbh2->selectrow_hashref("SHOW REPLICA STATUS" . $master2_channel_option) if ($dbh2->err);
 
-	WARN "$master1 is not replicating from $master2" if (!defined($slave_status1) || $slave_status1->{Master_Host} ne $master2_info->{ip});
-	WARN "$master2 is not replicating from $master1" if (!defined($slave_status2) || $slave_status2->{Master_Host} ne $master1_info->{ip});
+	if (!defined($slave_status1) || exists($slave_status1->{Master_Host}) ? $slave_status1->{Master_Host} : $slave_status1->{Source_Host} ne $master2_info->{ip}) {
+		WARN "$master1 is not replicating from $master2";
+	}
+	if (!defined($slave_status2) || exists($slave_status2->{Master_Host}) ? $slave_status2->{Master_Host} : $slave_status2->{Source_Host} ne $master1_info->{ip}) {
+		WARN "$master2 is not replicating from $master1";
+	}
 
 
 	# Check auto_increment_offset and auto_increment_increment

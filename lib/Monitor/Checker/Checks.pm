@@ -114,7 +114,7 @@ sub mysql($$) {
 		
 		# connect to server
 		my $dsn = "DBI:mysql:host=$peer_host;port=$peer_port;mysql_connect_timeout=$timeout";
-		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0 });
+		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 		
 		unless ($dbh) {
 			alarm(0);
@@ -180,7 +180,7 @@ sub rep_backlog($$) {
 	
 		# connect to server
 		my $dsn = "DBI:mysql:host=$peer_host;port=$peer_port;mysql_connect_timeout=$timeout";
-		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0 });
+		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 		unless ($dbh) {
 			alarm(0);
 			return "UNKNOWN: Connect error (host = $peer_host:$peer_port, user = $peer_user)! " . $DBI::errstr;
@@ -189,6 +189,12 @@ sub rep_backlog($$) {
 		# Check server (replication backlog)
 		my $sth = $dbh->prepare('SHOW SLAVE STATUS' . $channel_option);
 		my $res = $sth->execute;
+
+		if ($dbh->err) {
+			$sth->finish();
+			$sth = $dbh->prepare('SHOW REPLICA STATUS' . $channel_option);
+			$res = $sth->execute;
+		}
 
 		if ($dbh->err) {
 			alarm(1);
@@ -221,7 +227,7 @@ sub rep_backlog($$) {
 
 	
 		# Check backlog size
-		my $backlog = $status->{Seconds_Behind_Master};
+		my $backlog = exists($status->{Seconds_Behind_Master}) ? $status->{Seconds_Behind_Master} : $status->{Seconds_Behind_Source};
 		$backlog = 0 unless ($backlog);
 
 		return 'OK: Backlog is null' if ($backlog == 0);
@@ -270,12 +276,18 @@ sub rep_threads($$) {
 	
 		# connect to server
 		my $dsn = "DBI:mysql:host=$peer_host;port=$peer_port;mysql_connect_timeout=$timeout";
-		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0 });
+		my $dbh = DBI->connect($dsn, $peer_user, $peer_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
 		return "UNKNOWN: Connect error (host = $peer_host:$peer_port, user = $peer_user)! " . $DBI::errstr unless ($dbh);
 	
 		# Check server (replication backlog)
 		my $sth = $dbh->prepare('SHOW SLAVE STATUS' . $channel_option);
 		my $res = $sth->execute;
+
+		if ($dbh->err) {
+			$sth->finish();
+			$sth = $dbh->prepare('SHOW REPLICA STATUS' . $channel_option);
+			$res = $sth->execute;
+		}
 
 		if ($dbh->err) {
 			alarm(1);
@@ -308,7 +320,9 @@ sub rep_threads($$) {
 		return 'ERROR: Replication is not set up' unless defined($status);
 
 		# Check peer replication state
-		if ($status->{Slave_IO_Running} eq 'No' || $status->{Slave_SQL_Running} eq 'No') {
+		my $io_running  = exists($status->{Slave_IO_Running}) ? $status->{Slave_IO_Running} : $status->{Replica_IO_Running};
+		my $sql_running = exists($status->{Slave_SQL_Running}) ? $status->{Slave_SQL_Running} : $status->{Replica_SQL_Running};
+		if ($io_running eq 'No' || $sql_running eq 'No') {
 			return 'ERROR: Replication is broken';
 		}
 		return 0;

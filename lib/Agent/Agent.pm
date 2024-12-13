@@ -14,9 +14,9 @@ use MMM::Agent::Helpers;
 use MMM::Agent::Role;
 
 eval {
-    no warnings 'once';
-    require Unix::Uptime;
-    *uptime = *Unix::Uptime->uptime;
+	no warnings 'once';
+	require Unix::Uptime;
+	*uptime = *Unix::Uptime->uptime;
 };
 if ($EVAL_ERROR) {
 	require MMM::Common::Uptime;
@@ -38,6 +38,7 @@ struct 'MMM::Agent::Agent' => {
 	mysql_password		=> '$',
 	writer_role			=> '$',
 	bin_path			=> '$',
+	repl_channel		=> '$',
 
 	active_master		=> '$',
 	state				=> '$',
@@ -126,22 +127,27 @@ sub cmd_get_system_status($) {
 	my $self	= shift;
 
 	# determine master info
-    my $dsn			= sprintf("DBI:mysql:host=%s;port=%s;mysql_connect_timeout=3", $self->ip, $self->mysql_port);
-    my $eintr		= EINTR;
+	my $dsn			= sprintf("DBI:mysql:host=%s;port=%s;mysql_connect_timeout=3", $self->ip, $self->mysql_port);
+	my $eintr		= EINTR;
 	my $master_ip	= '';
 
-    my $dbh;
+	my $dbh;
 CONNECT: {
-    DEBUG "Connecting to mysql";
-    $dbh   = DBI->connect($dsn, $self->mysql_user, $self->mysql_password, { PrintError => 0 });
-    unless ($dbh) {
-        redo CONNECT if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
-        WARN "Couldn't connect to mysql. Can't determine current master host." . $DBI::err . " " . $DBI::errstr;
-    }
+	DEBUG "Connecting to mysql";
+	$dbh = DBI->connect($dsn, $self->mysql_user, $self->mysql_password, { PrintError => 0, mysql_get_server_pubkey => 1 });
+	unless ($dbh) {
+		redo CONNECT if ($DBI::err == 2003 && $DBI::errstr =~ /\($eintr\)/);
+		WARN "Couldn't connect to mysql. Can't determine current master host." . $DBI::err . " " . $DBI::errstr;
+		return "ERROR: Couldn't connect to mysql.";
+	}
 }
 
-    my $slave_status = $dbh->selectrow_hashref('SHOW SLAVE STATUS');
-	$master_ip = $slave_status->{Master_Host} if (defined($slave_status));
+	my $channel_option = "";
+	$channel_option = " FOR CHANNEL '" . $self->repl_channel . "'" if (defined($self->repl_channel) && $self->repl_channel ne '');
+
+	my $slave_status = $dbh->selectrow_hashref("SHOW SLAVE STATUS" . $channel_option);
+	$slave_status = $dbh->selectrow_hashref("SHOW REPLICA STATUS" . $channel_option) if ($dbh->err);
+	$master_ip = exists($slave_status->{Master_Host}) ? $slave_status->{Master_Host} : $slave_status->{Source_Host} if (defined($slave_status));
 
 	my @roles;
 	foreach my $role (keys(%{$main::config->{role}})) {
@@ -260,8 +266,6 @@ sub cmd_set_status($$) {
 	
 	# Process state change
 	if ($new_state ne $self->state) {
-		# if ($new_state    eq 'ADMIN_OFFLINE') { MMM::Agent::Helpers::turn_off_slave(); }
-		# if ($self->state  eq 'ADMIN_OFFLINE') { MMM::Agent::Helpers::turn_on_slave();  }
 		$self->state($new_state);
 	}
 
@@ -302,6 +306,7 @@ sub from_config($%) {
 	$self->mysql_password	($host->{agent_password});
 	$self->writer_role		($config->{active_master_role});
 	$self->bin_path			($host->{bin_path});
+	$self->repl_channel		($host->{replication_channel});
 }
 
 1;
