@@ -12,6 +12,7 @@ ETCDIR    = $(PREFIX)/etc
 TMPDIR    = $(PREFIX)/tmp
 INITDIR   = /etc/init.d
 
+OS_VERSION := $(shell awk -F= '/^VERSION_ID/{print $$2}' /etc/os-release | tr -d '"' | cut -d. -f1)
 PERL_VER := $(shell sh PERL_VERSION)
 HW_PLATFORM := $(shell uname -i)
 PERL_LIBS = lib/perl_libs_$(PERL_VER)_$(HW_PLATFORM).tar.gz
@@ -37,7 +38,10 @@ install_common:
 	/sbin/ldconfig
 
 install_agent: install_common
-	ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent
+	if [ $(OS_VERSION) -le 8 ]; \
+	then ln -sf $(ETCDIR)/init.d/mysql-mmm-agent $(INITDIR)/mysql-mmm-agent; \
+	fi
+
 	cp -f etc/mysql-mmm/mmm_agent.conf $(CONFDIR)/mmm_agent_example.conf
 	chmod 600 $(CONFDIR)/mmm_agent_example.conf
 	cp -f etc/systemd/mysql-mmm-agent.service /usr/lib/systemd/system/
@@ -47,7 +51,10 @@ install_agent: install_common
 	systemctl daemon-reload
 
 install_monitor: install_common
-	ln -sf $(ETCDIR)/init.d/mysql-mmm-monitor $(INITDIR)/mysql-mmm-monitor
+	if [ $(OS_VERSION) -le 8 ]; \
+	then ln -sf $(ETCDIR)/init.d/mysql-mmm-monitor $(INITDIR)/mysql-mmm-monitor; \
+	fi
+	
 	cp -r etc/mysql-mmm/mmm_mon.conf $(CONFDIR)/mmm_mon_example.conf
 	chmod 600 $(CONFDIR)/mmm_mon_example.conf
 	cp -f etc/systemd/mysql-mmm-monitor@.service /usr/lib/systemd/system/
